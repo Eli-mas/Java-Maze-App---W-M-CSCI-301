@@ -2,9 +2,13 @@ package generation;
 
 import static org.junit.Assert.*;
 
-import java.util.Arrays;
-import java.util.Iterator;
 import org.junit.Test;
+import org.junit.After;
+import org.junit.Before;
+
+import java.util.Arrays;
+import java.util.ArrayList;
+import java.util.Iterator;
 
 import gui.Controller;
 import gui.MazePanel;
@@ -28,8 +32,79 @@ public class MazeFactoryTest {
 	 * 
 	 */
 	
+	Maze perfectMaze;
+	Maze imperfectMaze;
+	
+	@Before
+	final public void someCall() {
+		perfectMaze=getPerfectMaze();
+	}
+	
 	@Test
-	final public void testMazeDists(){
+	final public void testOneExit(){
+		/*
+		 * get mazedists
+		 * verify: only one occurrence of the value <1> in mazedists
+		 */
+		assertTrue(false);
+	}
+	
+	@Test
+	final public void testEveryCellHasExit() {
+		/*
+		 * get mazedists
+		 * verify: every cell has at least one neighbor whose value
+		 *     is one more or less than the neighbor's value
+		 */
+		assertTrue(false);
+	}
+	
+	@Test
+	final public void testNoClosedRooms() {
+		/*
+		 * one idea: test that every wallboard connects to other wallboards which ultimately
+		 *     connect to the outer wall of the maze
+		 * 
+		 * but is there a simpler way?
+		 * 
+		 * still have to understand how the floorplan object works...
+		 */
+		assertTrue(false);
+	}
+	
+	@Test
+	final public void testMaxDistanceStartingPoint() {
+		/*
+		 * get mazedists
+		 * test that the starting point in mazedists has the largest value in the distance array
+		 */
+		assertTrue(false);
+	}
+	
+	@Test
+	final public void testNoRoomsInPerfectMaze() {
+		/*
+		 * get a perfect maze via getPerfectMaze
+		 * use Floorplan.isInRoom or Floorplan.areaOverlapsWithRoom to check that no cells are in rooms
+		 */
+		assertTrue(false);
+	}
+	
+	@Test
+	final public void getPerfect() {
+		Distance dists=perfectMaze.getMazedists();
+		Floorplan floorplan = perfectMaze.getFloorplan();
+		
+		int[][] distVals=dists.getAllDistanceValues();
+		
+		System.out.println("mazedists:\n"+Arrays.deepToString(distVals));
+		System.out.println("floorplan:\n"+floorplan);
+		
+		
+		System.out.print("");
+	}
+	
+	public Maze getPerfectMaze(){
 		/*
 		*/
 		
@@ -60,14 +135,7 @@ public class MazeFactoryTest {
 		}
 		
 		
-		Maze maze = order.getMaze();
-		Distance dists=maze.getMazedists();
-		int[][] distVals=dists.getAllDistanceValues();
-		
-		System.out.println("mazedists:\n"+Arrays.deepToString(distVals));
-		System.out.println("floorplan:\n"+maze.getFloorplan());
-		
-		assertEquals(0,0);
+		return order.getMaze();
 	}
 }
 
