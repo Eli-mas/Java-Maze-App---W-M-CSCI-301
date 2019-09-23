@@ -21,55 +21,123 @@ import gui.MazeFileReader;
 
 
 public class MazeFactoryTest {
+	
 	/*
-	 * Test cases for a maze:
-	 * 
-	 * --every cell has a path to the exit
-	 * 
-	 * --there is one opening/closing
-	 * 
-	 * --no closed rooms
-	 * 
+	 * TODO:
+	 *     allow for testing on mazes of variable difficulties
+	 *     ensure deterministic maze generation
+	 *     make sure methods are being tested on perfect and imperfect mazes, where applicable
+	 *     create javadoc for methods
+	 *     provide in-line comments in methods
+	 *     any other tests?
 	 */
 	
 	Maze perfectMaze;
 	Maze imperfectMaze;
+	int width, height;
 	
 	@Before
-	final public void someCall() {
-		perfectMaze=getPerfectMaze();
+	final public void establishMazes() {
+		perfectMaze=getMaze(true);
+		imperfectMaze=getMaze(false);
+		width=perfectMaze.getWidth();
+		height=perfectMaze.getHeight();
+		
 	}
 	
 	@Test
-	final public void testOneExit(){
+	final public void testOneExitByDistance(){
+		assertEquals(1,_testOneExitByDistance(perfectMaze));
+		assertEquals(1,_testOneExitByDistance(imperfectMaze));
+	}
+	
+	public int _testOneExitByDistance(Maze maze){
 		/*
 		 * get mazedists
 		 * verify: only one occurrence of the value <1> in mazedists
 		 */
-		assertTrue(false);
+		int count=0;
+		int[][] dists = maze.getMazedists().getAllDistanceValues();
+		for(int x=0; x<width; x++) {
+			for(int y=0; y<height; y++) {
+				if(1==dists[x][y]) count+=1;
+			}
+		}
+		return count;
+	}
+	
+	@Test
+	final public void testOneExitByBorders(){
+		assertEquals(1,_testOneExitByBorders(perfectMaze));
+		assertEquals(1,_testOneExitByBorders(imperfectMaze));
+	}
+	
+	public int _testOneExitByBorders(Maze maze){
+		/*
+		 * get floorplan
+		 * verify: only one border wallboard around the entire maze is missing
+		 */
+		int count=0;
+		Floorplan floorplan = maze.getFloorplan();
+		for(int x=0; x<width; x++) {
+			if(floorplan.hasNoWall(x,0,CardinalDirection.North)) count+=1;
+			if(floorplan.hasNoWall(x,height-1,CardinalDirection.South)) count+=1;
+		}
+		for(int y=0; y<height; y++) {
+			if(floorplan.hasNoWall(0,y,CardinalDirection.West)) count+=1;
+			if(floorplan.hasNoWall(width-1,y,CardinalDirection.East)) count+=1;
+		}
+		return count;
 	}
 	
 	@Test
 	final public void testEveryCellHasExit() {
-		/*
-		 * get mazedists
-		 * verify: every cell has at least one neighbor whose value
-		 *     is one more or less than the neighbor's value
-		 */
-		assertTrue(false);
+		assertTrue(_testEveryCellHasExit(perfectMaze));
 	}
 	
-	@Test
-	final public void testNoClosedRooms() {
+	public boolean _testEveryCellHasExit(Maze maze) {
 		/*
-		 * one idea: test that every wallboard connects to other wallboards which ultimately
-		 *     connect to the outer wall of the maze
-		 * 
-		 * but is there a simpler way?
-		 * 
-		 * still have to understand how the floorplan object works...
+		 * verify: if we start a depth-first recursive walk at the exit cell,
+		 *     where we walk to each cell with distance one greater than the current cell,
+		 *     every cell is reached
 		 */
-		assertTrue(false);
+		boolean[][] reached = new boolean[width][height];
+		for(int x=0; x<width; x++) {
+			for(int y=0; y<height; y++) {
+				reached[x][y]=false;
+			}
+		}
+		
+		Floorplan floorplan = maze.getFloorplan();
+		Distance distMatrix=maze.getMazedists();
+		int[][] dists = distMatrix.getAllDistanceValues();
+		int[] exit = distMatrix.getExitPosition();
+		
+		
+		
+		_testEveryCellHasExit_recursiveFill(reached, floorplan, exit[0], exit[1], dists);
+		
+		for(int x=0; x<width; x++) {
+			for(int y=0; y<height; y++) {
+				if(!reached[x][y]) return false;
+			}
+		}
+		
+		return true;
+	}
+	
+	public void _testEveryCellHasExit_recursiveFill(
+			boolean[][] reached, Floorplan floorplan, int x, int y, int[][] dists) {
+		reached[x][y]=true;
+		for(CardinalDirection dir: CardinalDirection.values()) {
+			if(floorplan.hasNoWall(x, y, dir)) {
+				int[] dx_dy = dir.getDirection();
+				int new_x=x+dx_dy[0], new_y=y+dx_dy[1];
+				if(new_x<0 || new_y<0 || new_x>=width || new_y>=height) continue;
+				if(dists[new_x][new_y]>dists[x][y])
+					_testEveryCellHasExit_recursiveFill(reached, floorplan, new_x, new_y, dists);
+			}
+		}
 	}
 	
 	@Test
@@ -78,16 +146,36 @@ public class MazeFactoryTest {
 		 * get mazedists
 		 * test that the starting point in mazedists has the largest value in the distance array
 		 */
-		assertTrue(false);
+		Distance dist = perfectMaze.getMazedists();
+		int[] start = dist.getStartPosition();
+		int[][] dists= dist.getAllDistanceValues();
+		int maxDistance=0, max_x=-1, max_y=-1;
+		for(int x=0; x<width; x++) {
+			for(int y=0; y<height; y++) {
+				if(dists[x][y]>maxDistance) {
+					maxDistance=dists[x][y];
+					max_x=x; max_y=y;
+				}
+			}
+		}
+		
+		assertTrue(max_x==start[0] && max_y==start[1]);
 	}
 	
 	@Test
 	final public void testNoRoomsInPerfectMaze() {
-		/*
-		 * get a perfect maze via getPerfectMaze
-		 * use Floorplan.isInRoom or Floorplan.areaOverlapsWithRoom to check that no cells are in rooms
-		 */
-		assertTrue(false);
+		assertTrue(_testNoRoomsInPerfectMaze());
+	}
+	
+	public boolean _testNoRoomsInPerfectMaze() {
+		Floorplan floorplan = perfectMaze.getFloorplan();
+		for(int x=0; x<width; x++) {
+			for(int y=0; y<height; y++){
+				if(floorplan.isInRoom(x, y)) return false;
+			}
+		}
+		
+		return true;
 	}
 	
 	@Test
@@ -97,14 +185,15 @@ public class MazeFactoryTest {
 		
 		int[][] distVals=dists.getAllDistanceValues();
 		
-		System.out.println("mazedists:\n"+Arrays.deepToString(distVals));
+		System.out.println("mazedists:");
+		for(int[] row:distVals) System.out.println(Arrays.toString(row));
 		System.out.println("floorplan:\n"+floorplan);
 		
 		
 		System.out.print("");
 	}
 	
-	public Maze getPerfectMaze(){
+	public Maze getMaze(boolean perfect){
 		/*
 		*/
 		
@@ -112,10 +201,10 @@ public class MazeFactoryTest {
 		controller.turnOffGraphics();
 		
 		OrderStub order = new OrderStub();
-		order.setSkillLevel(0);
+		order.setSkillLevel(4);
 		order.setBuilder(Order.Builder.DFS); 
-		order.setPerfect(true);
-		System.out.println("testline:");
+		order.setPerfect(perfect);
+		//System.out.println("testline:");
 		order.start(controller, null);
 		
 		/*MazeFactory factory = new MazeFactory(true);
