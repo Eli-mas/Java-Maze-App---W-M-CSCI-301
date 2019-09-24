@@ -1,0 +1,83 @@
+----	----	----	----
+Steps from http://weblog.jamisbuck.org/2010/12/29/maze-generation-eller-s-algorithm.html:
+
+STEP 1 -- Initialize the cells of the first row to each exist in their own set.
+
+STEP 2 -- Randomly join adjacent cells, but only if they are not in the same set. When joining adjacent cells, merge the cells of both sets into a single set, indicating that all cells in both sets are now connected (there is a path that connects any two cells in the set).
+
+STEP 3 -- For each set, randomly create vertical connections downward to the next row. Each remaining set must have at least one vertical connection. The cells in the next row thus connected must share the set of the cell above them.
+
+STEP 4 -- Flesh out the next row by putting any remaining cells into their own sets.
+
+STEP 5 -- Repeat until the last row is reached.
+
+STEP 6 -- For the last row, join all adjacent cells that do not share a set, and omit the vertical connections, and you’re done!
+----	----	----	----
+
+
+
+*** S1-2 ***
+subclass Integer with a new class SetInteger with
+	fields:
+		value: the integer value
+		set: reference to the set containing other cells with this value
+	methods:
+		@Override equals: test equality of value field
+		@Override hashCode: return hashCode of value field
+
+create new array SetInteger[width][height]
+set first row to unique SetInteger values
+
+define wallRemovalFromRow(currentRow,newRow){
+	boards={list of wallboards in newRow}
+	
+	-->randomly choose how many sets we want after removals, set to finalCount
+	low = (int)round(sqrt(length of row))
+	finalCount = random integer in inclusive range (low, row.length()-low)
+	
+	while true:
+		get the number of unique values in the row
+		if this number is equal to or less than finalCount: break
+		select a wallboard at random
+		get the neighboring cells (left/right) of this wallboard
+		if these cells are of different sets:
+			remove the wallboard from Floorplan
+			set all elements in both sets to the same value (the lower value of the two sets)
+		remove the wallboard from boards
+}
+
+currentRow=first row
+perform wallRemovalFromRow(currentRow)
+
+*** S3-5 ***
+while true:
+	newRow=row after currentRow
+	if newRow is last row: break
+	startVal=max value in currentRow
+	set values of newRow to range(startVal,startVal+newRow.length())
+	for each set overlapping the currentRow:
+		extendable={cells in currentRow belonging to this set}
+		not_extendable={}
+		count = size of extendable
+		vertical_count a random integer in range [0, ceil((float)count/2f)]
+		for i in range(vertical_count):
+			cell = random cell from extendable (array of two integers)
+			remove wallboard between cell and cell's lower neighbor
+			set cell's lower neighbor to cell's value
+			in floorplan, remove the wallboard between cell and lower neighbor
+			unextendables={cell, cells neighboring cell which do not have a wallboard between them and cell}
+			add cells in unextendable to not_extendable
+			remove cells in unextendable from extendable
+			if extendable is empty: break
+	
+	perform wallRemovalFromRow(null,newRow)
+	currentRow=newRow
+
+*** S6 ***
+get list of all wallboards in last row
+for each wallboard:
+	if the cells on either side are of different sets:
+		get the sets belonging to the two cells
+		remove the wallboard from floorplan
+		set the cells in both sets to be of one set
+
