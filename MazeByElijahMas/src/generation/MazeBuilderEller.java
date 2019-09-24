@@ -24,7 +24,19 @@ public class MazeBuilderEller extends MazeBuilder implements Runnable {
 	public MazeBuilderEller() {
 		super();
 		System.out.println("MazeBuilderEller uses Eller's algorithm to generate a maze.");
+		System.out.printf("initial width, height: %d, %d\n",width,height);
 	}
+	
+	public MazeBuilderEller(boolean det) {
+		super(det);
+		System.out.println("MazeBuilderEller uses Eller's algorithm to generate a maze (deterministic enabled).");
+		
+	}
+	
+	/*
+	 * { cells = new int[width][height]; for(int i=0; i<height; i++) cells[0][i]=i;
+	 * }
+	 */
 	
 	private void mergeSets(int[] a, int[] b) {
 		int val1=cells[a[0]][a[1]], val2=cells[b[0]][b[1]], minVal, maxVal;
@@ -37,8 +49,11 @@ public class MazeBuilderEller extends MazeBuilder implements Runnable {
 			maxVal=val1;
 		}
 		//as per documentation, addAll creates a union of two sets
-		cellSets.get(minVal).addAll(cellSets.get(maxVal));
+		HashSet<List<Integer>> maxCells = cellSets.get(maxVal);
+		cellSets.get(minVal).addAll(maxCells);
+		for(List<Integer> cellList: maxCells) addValueAtCell(cellList, minVal);
 		cellSets.remove(maxVal);
+		System.out.print("");
 	}
 	
 	private int getCellValue(int[] cell) {
@@ -51,14 +66,13 @@ public class MazeBuilderEller extends MazeBuilder implements Runnable {
 		return (a.size());
 	}
 	
-	private void wallRemovalFromRow(Object currentRow, int[] newRow){
+	private void wallRemovalFromRow(Object currentRow, int[] newRow, int rowIndex){
 		//boards={list of wallboards in newRow}
 		ArrayList<VerticalWallBoard> boards = new ArrayList<VerticalWallBoard>();
 		
-		int y=newRow[1];
 		
 		for(int i=0; i<newRow.length-1; i++) {
-			boards.add(new VerticalWallBoard(new int[] {i,y}, new int[] {i+1,y}, floorplan));
+			boards.add(new VerticalWallBoard(new int[] {rowIndex,i}, new int[] {rowIndex,i+1}, floorplan));
 		}
 		
 		/*
@@ -71,48 +85,80 @@ public class MazeBuilderEller extends MazeBuilder implements Runnable {
 		int low = (int)Math.round(Math.sqrt(newRow.length));
 		int finalCount = SingleRandom.getRandom().nextIntWithinInterval(low, newRow.length-low);
 		
+		System.out.println("finalCount: "+finalCount);
+		
 		while(true) {
 			
-		/*
-			get the number of unique values in the row
-			if this number is equal to or less than finalCount: break
-		*/
-		if(getUniqueCount(newRow)<=finalCount) break;
-		
-		
-		/*
-			select a wallboard at random
-			get the neighboring cells (left/right) of this wallboard
-		*/
-		int index = SingleRandom.getRandom().nextIntWithinInterval(0, boards.size());
-		VerticalWallBoard wall = boards.get(index);
-		int[] left=wall.getLeft(), right=wall.getRight();
-		
-		/*
-			if these cells are of different sets:
-				remove the wallboard from Floorplan
-				set all elements in both sets to the same value (the lower value of the two sets)
-		*/
-		if (getCellValue(left)!=getCellValue(right)) {
-			mergeSets(left, right);
-			wall.removeFromFloorplan();
-		};
-		
-		/*
-			remove the wallboard from boards
-		 */
-		boards.remove(index);
+			/*
+				get the number of unique values in the row
+				if this number is equal to or less than finalCount: break
+			*/
+			int unique=getUniqueCount(newRow);
+			if(unique<=finalCount) break;
+			
+			
+			/*
+				select a wallboard at random
+				get the neighboring cells (left/right) of this wallboard
+			*/
+			int index = SingleRandom.getRandom().nextIntWithinInterval(0, boards.size()-1);
+			VerticalWallBoard wall = boards.get(index);
+			int[] left=wall.getLeft(), right=wall.getRight();
+			
+			/*
+				if these cells are of different sets:
+					remove the wallboard from floorplan
+					set all elements in both sets to the same value (the lower value of the two sets)
+			*/
+			if (getCellValue(left)!=getCellValue(right)) {
+				mergeSets(left, right);
+				wall.removeFromFloorplan();
+			};
+			
+			/*
+				remove the wallboard from boards
+			 */
+			boards.remove(index);
 		}
 	}
 	
-	public MazeBuilderEller(boolean det) {
-		super(det);
-		System.out.println("MazeBuilderEller uses Eller's algorithm to generate a maze (deterministic enabled).");
+	private void addValueAtCell(List<Integer> cellList, int setValue) {
+		HashSet<List<Integer>> s = cellSets.get(setValue);
+		if(null==s) {
+			s=new HashSet<List<Integer>>();
+			s.add(cellList);
+			cellSets.put(setValue, s);
+		}
+		else s.add(cellList);
+		
+		cells[cellList.get(0)][cellList.get(1)]=setValue;
+		
+	}
+	private void addValueAtCell(int[] cell, int setValue) {
+		List<Integer> cellList = Arrays.asList(cell[0],cell[1]);
+		addValueAtCell(cellList, setValue);
 	}
 	
 	@Override
 	protected void generatePathways() {
-		throw new RuntimeException("MazeBuilderEller: using unimplemented method generatePathways"); 
+		cellSets = new HashMap<Integer,HashSet<List<Integer>>>();
+		
+		int width=4,height=5;
+		cells=new int[width][height];
+		for(int i=0; i<height; i++) addValueAtCell(new int[] {0,i},i);
+		
+		System.out.printf("width, height: %d, %d\n",width,height);
+		System.out.println("cells[0]:\n"+Arrays.toString(cells[0]));
+		wallRemovalFromRow(null, cells[0], 0);
+		System.out.println("cells[0] after wall removal:\n"+Arrays.toString(cells[0]));
+		
+		throw new RuntimeException("MazeBuilderEller: not ready to proceed beyond this point");
+		
+	}
+	
+	public static void main(String[] args) {
+		
+		(new MazeBuilderEller()).generatePathways();
 	}
 
 }
@@ -146,5 +192,10 @@ class VerticalWallBoard{
 	
 	public void removeFromFloorplan() {
 		floorplan.deleteWallboard(wall);
+	}
+	
+	@Override
+	public String toString() {
+		return String.format("%s <--> %s", Arrays.toString(cellLeft), Arrays.toString(cellRight));
 	}
 }
