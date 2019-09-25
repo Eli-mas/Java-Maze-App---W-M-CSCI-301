@@ -36,6 +36,7 @@ public class MazeFactoryTestEller {
 	
 	@Test
 	final public void testMaze() {
+		System.out.println("*  *  * running MazeBuilderEllerTest *  *  *");
 		getMaze(false);
 	}
 	

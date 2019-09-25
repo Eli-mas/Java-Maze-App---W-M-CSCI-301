@@ -33,13 +33,20 @@ public class MazeBuilderEller extends MazeBuilder implements Runnable {
 		
 	}
 	
-	/*
-	 * { cells = new int[width][height]; for(int i=0; i<height; i++) cells[0][i]=i;
-	 * }
+	/**
+	 * Given two sets with reference to coordinates in <this.cells>,
+	 * combine the two sets by transferring all coordinates to one of the two sets
+	 * and deleting the other set.
+	 * 
+	 * Each set is identified by a number;
+	 * the set that is kept is that which has the lower value of the two
+	 * @param firstCoordinate 
+	 * @param secondCoordinate
 	 */
-	
-	private void mergeSets(int[] a, int[] b) {
-		int val1=cells[a[0]][a[1]], val2=cells[b[0]][b[1]], minVal, maxVal;
+	private void mergeSets(int[] firstCoordinate, int[] secondCoordinate) {
+		int val1=cells[firstCoordinate[0]][firstCoordinate[1]];
+		int val2=cells[secondCoordinate[0]][secondCoordinate[1]];
+		int minVal, maxVal;
 		if(val1<val2) {
 			minVal=val1;
 			maxVal=val2;
@@ -77,13 +84,10 @@ public class MazeBuilderEller extends MazeBuilder implements Runnable {
 		
 		/*
 			-->randomly choose how many sets we want after removals, set to finalCount
-			low = (int)round(sqrt(length of row))
-			finalCount = random integer in inclusive range (low, row.length-low)
-			
-			I made this range up, for the moment it seems to make sense
 		*/
-		int low = (int)Math.round(Math.sqrt(newRow.length));
-		int finalCount = SingleRandom.getRandom().nextIntWithinInterval(low, newRow.length-low);
+		int low =  (int)Math.round(Math.sqrt(newRow.length));
+		int high = (int)Math.round(Math.pow( newRow.length,0.75));
+		int finalCount = SingleRandom.getRandom().nextIntWithinInterval(low, high);
 		
 		System.out.println("finalCount: "+finalCount);
 		
@@ -113,6 +117,7 @@ public class MazeBuilderEller extends MazeBuilder implements Runnable {
 			if (getCellValue(left)!=getCellValue(right)) {
 				mergeSets(left, right);
 				wall.removeFromFloorplan();
+				//System.out.println(Arrays.toString(cells[0])+" <wallRemovalFromRow-->removeFromFloorplan>");
 			};
 			
 			/*
@@ -143,7 +148,7 @@ public class MazeBuilderEller extends MazeBuilder implements Runnable {
 	protected void generatePathways() {
 		cellSets = new HashMap<Integer,HashSet<List<Integer>>>();
 		
-		int width=4,height=5;
+		//int width=4,height=5;
 		cells=new int[width][height];
 		for(int i=0; i<height; i++) addValueAtCell(new int[] {0,i},i);
 		
@@ -152,20 +157,36 @@ public class MazeBuilderEller extends MazeBuilder implements Runnable {
 		wallRemovalFromRow(null, cells[0], 0);
 		System.out.println("cells[0] after wall removal:\n"+Arrays.toString(cells[0]));
 		
+		for(int i=0; i<height-1; i++) {
+			boolean sameSet = (cells[0][i]==cells[0][i+1]);
+			if(sameSet) {
+				assert !floorplan.hasWall(0, i, VerticalWallBoard.cdForward) :
+					String.format("x=0, y=%d: this cell should NOT have a wall in the direction (0,1), but does",i);
+				assert !floorplan.hasWall(0, i+1, VerticalWallBoard.cdBack) :
+					String.format("x=0, y=%d: this cell should NOT have a wall in the direction (0,-1), but does",i+1);
+			}
+			else {
+				assert floorplan.hasWall(0, i, VerticalWallBoard.cdForward):
+					String.format("x=0, y=%d: this cell SHOULD have a wall in the direction (0,1), but does not",i);
+				assert floorplan.hasWall(0, i+1, VerticalWallBoard.cdBack) :
+					String.format("x=0, y=%d: this cell SHOULD have a wall in the direction (0,-1), but does not",i+1);
+			}
+		}
+		assert floorplan.hasWall(0, 0, VerticalWallBoard.cdBack): 
+			String.format("x=0, y=0: this cell SHOULD have a wall in the direction (0,-1), but does not");
+		assert floorplan.hasWall(0, height-1, VerticalWallBoard.cdForward): 
+			String.format("x=0, y=%d: this cell SHOULD have a wall in the direction (0,1), but does not",height-1);
+		
+		
 		throw new RuntimeException("MazeBuilderEller: not ready to proceed beyond this point");
 		
-	}
-	
-	public static void main(String[] args) {
-		
-		(new MazeBuilderEller()).generatePathways();
 	}
 
 }
 
 class VerticalWallBoard{
-	static final CardinalDirection cdBack = CardinalDirection.getDirection(-1, 0);
-	static final CardinalDirection cdForward= CardinalDirection.getDirection(1, 0);
+	static final CardinalDirection cdBack = CardinalDirection.getDirection(0, -1);
+	static final CardinalDirection cdForward= CardinalDirection.getDirection(0, 1);
 	
 	private int[] cellLeft;
 	private int[] cellRight;
@@ -173,10 +194,11 @@ class VerticalWallBoard{
 	private Wallboard wall;
 	
 	public VerticalWallBoard(int[] cellLeft, int[] cellRight, Floorplan floorplan) {
-		int xLeft=cellLeft[0], xRight=cellRight[0], y=cellLeft[1];
-		if(y!=cellRight[1]);
+		//int xLeft=, xRight=cellRight[0], y=;
+		if(cellLeft[0]!=cellRight[0]) throw new RuntimeException(String.format("VerticalWallBoard constructor: cellLeft "
+				+ "and cellRight have different y-values: %d, %d",cellLeft[1],cellRight[1]));
 		
-		this.wall = new Wallboard(xLeft,y,cdForward);
+		this.wall = new Wallboard(cellLeft[0],cellLeft[1],cdForward);
 		this.cellLeft=cellLeft;
 		this.cellRight=cellRight;
 		this.floorplan=floorplan;
@@ -192,6 +214,7 @@ class VerticalWallBoard{
 	
 	public void removeFromFloorplan() {
 		floorplan.deleteWallboard(wall);
+		//System.out.printf("deleting wallboard: x,y=(%d,%d) d=%s\n",wall.getX(),wall.getY(),Arrays.toString(wall.getDirection().getDirection()));
 	}
 	
 	@Override
