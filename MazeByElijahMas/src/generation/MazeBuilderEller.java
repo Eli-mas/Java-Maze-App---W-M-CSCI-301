@@ -11,6 +11,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Queue;
 import java.util.Set;
+import java.util.stream.IntStream;
 
 /**
  * @author HomeFolder
@@ -47,8 +48,8 @@ public class MazeBuilderEller extends MazeBuilder implements Runnable {
 	 * @param secondCoordinate
 	 */
 	private void mergeSets(int[] firstCoordinate, int[] secondCoordinate) {
-		int val1=cells[firstCoordinate[0]][firstCoordinate[1]];
-		int val2=cells[secondCoordinate[0]][secondCoordinate[1]];
+		int val1=getCellValue(firstCoordinate);//cells[firstCoordinate[0]][firstCoordinate[1]]
+		int val2=getCellValue(secondCoordinate);//cells[secondCoordinate[0]][secondCoordinate[1]]
 		int minVal, maxVal;
 		if(val1<val2) {
 			minVal=val1;
@@ -58,12 +59,27 @@ public class MazeBuilderEller extends MazeBuilder implements Runnable {
 			minVal=val2;
 			maxVal=val1;
 		}
+		if(minVal<0) {
+			int temp=minVal;
+			minVal=maxVal;
+			maxVal=temp;
+		}
+		
 		//as per documentation, addAll creates a union of two sets
 		HashSet<List<Integer>> maxCells = cellSets.get(maxVal);
+		/*
+		System.out.printf("minVal=%d, maxVal=%d\n",minVal,maxVal);
+		System.out.println("cellSets.get(minVal):\n"+cellSets.get(minVal));
+		System.out.println("maxCells:\n"+maxCells);
+		*/
 		cellSets.get(minVal).addAll(maxCells);
 		for(List<Integer> cellList: maxCells) addValueAtCell(cellList, minVal);
 		cellSets.remove(maxVal);
 		System.out.print("");
+	}
+	
+	private void mergeSets(List<Integer> cell1, List<Integer> cell2) {
+		mergeSets(new int[] {cell1.get(0),cell1.get(1)}, new int[] {cell2.get(0),cell2.get(1)});
 	}
 	
 	private int getCellValue(int[] cell) {
@@ -74,28 +90,55 @@ public class MazeBuilderEller extends MazeBuilder implements Runnable {
 		return cells[cell.get(0)][cell.get(1)];
 	}
 	
-	private int getUniqueCount(int[] row) {
+	private HashSet<Integer> getUniqueRowValues(int[] row){
 		HashSet<Integer> a = new HashSet<Integer>();
 		for(int i: row) a.add(i);
-		return (a.size());
+		return a;
 	}
 	
-	private void wallRemovalFromRow(int[] currentRow, int[] newRow, int rowIndex){
-		
-		//boards={list of wallboards in newRow}
+	private HashSet<Integer> getUniqueValues(int[][] array){
+		HashSet<Integer> a = new HashSet<Integer>();
+		for(int[] row:array) {
+			for(int i: row) a.add(i);
+		}
+		return a;
+	}
+	
+	private int getUniqueCount(int[] row) {
+		return getUniqueRowValues(row).size();
+	}
+	
+	private int getUniqueCount(int[][] array) {
+		return getUniqueValues(array).size();
+	}
+	
+	ArrayList<VerticalWallBoard> getWallboardsInRow(int[] row, int rowIndex){
 		ArrayList<VerticalWallBoard> boards = new ArrayList<VerticalWallBoard>();
 		
-		for(int i=0; i<newRow.length-1; i++) {
+		for(int i=0; i<row.length-1; i++) {
 			boards.add(new VerticalWallBoard(new int[] {rowIndex,i}, new int[] {rowIndex,i+1}, floorplan));
 		}
+		return boards;
+	}
+	
+	private void wallRemovalFromRow(int[] row, int rowIndex){
+		
+		//boards={list of wallboards in newRow}
+		ArrayList<VerticalWallBoard> boards = getWallboardsInRow(row, rowIndex);
 		
 		/*
 			-->randomly choose how many sets we want after removals, set to finalCount
 		*/
-		int low =  (int)Math.round(Math.sqrt(newRow.length));
-		int high = (int)Math.round(Math.pow( newRow.length,0.75));
-		int finalCount = SingleRandom.getRandom().nextIntWithinInterval(low, high);
 		
+		int numberOfPossibleWallRemovals=0;
+		for(VerticalWallBoard wall: boards) {
+			if (getCellValue(wall.getLeft())!=getCellValue(wall.getRight()) && !wall.isBorder()) numberOfPossibleWallRemovals++;
+		}
+		int low =  (int)Math.round(Math.sqrt(numberOfPossibleWallRemovals));
+		int high = (int)Math.round(Math.pow( numberOfPossibleWallRemovals,0.75));
+		int finalCount = (low<high) ? SingleRandom.getRandom().nextIntWithinInterval(low, high) : low;
+		
+		int removals=0;
 		System.out.println("finalCount: "+finalCount);
 		
 		while(true) {
@@ -104,8 +147,8 @@ public class MazeBuilderEller extends MazeBuilder implements Runnable {
 				get the number of unique values in the row
 				if this number is equal to or less than finalCount: break
 			*/
-			int unique=getUniqueCount(newRow);
-			if(unique<=finalCount) break;
+			//int unique=getUniqueCount(newRow);
+			//if(unique<=finalCount) break;
 			
 			
 			/*
@@ -117,13 +160,14 @@ public class MazeBuilderEller extends MazeBuilder implements Runnable {
 			int[] left=wall.getLeft(), right=wall.getRight();
 			
 			/*
-				if these cells are of different sets:
+				if these cells are of different sets and the wall is not marked as non-removable:
 					remove the wallboard from floorplan
 					set all elements in both sets to the same value (the lower value of the two sets)
 			*/
 			if (getCellValue(left)!=getCellValue(right) && !wall.isBorder()) {
 				mergeSets(left, right);
 				wall.removeFromFloorplan();
+				removals++;
 				//System.out.println(Arrays.toString(cells[0])+" <wallRemovalFromRow-->removeFromFloorplan>");
 			};
 			
@@ -131,6 +175,7 @@ public class MazeBuilderEller extends MazeBuilder implements Runnable {
 				remove the wallboard from boards
 			 */
 			boards.remove(index);
+			if(removals>=finalCount || 0==boards.size()) break;
 		}
 	}
 	
@@ -159,27 +204,88 @@ public class MazeBuilderEller extends MazeBuilder implements Runnable {
 		return max;
 	}
 	
-	void initializeRow(Object currentRow, int[] newRow){
-		int start = (null==currentRow)? -1 : rowMax((int[])currentRow);
-		for(int i=0; i<height; i++) addValueAtCell(new int[] {0,i},i+start+1);
+	//void initializeRow(Object currentRow, int[] newRow){
+	//	int start = (null==currentRow)? -1 : rowMax((int[])currentRow);
+	//	for(int i=0; i<height; i++) addValueAtCell(new int[] {0,i},i+start+1);
+	//}
+	
+	void link_CurrentRow_NewRow(int[] currentRow, int[] newRow, int currentRowIndex) {
+		
+		/*
+		 * for each set overlapping the currentRow:
+		 */
+		for(int setValue: getUniqueRowValues(currentRow)) {
+			HashSet<List<Integer>> extendable = new HashSet<List<Integer>>(); // = cells in currentRow belonging to this set
+			for(int y=0; y<height; y++) {
+				if(setValue==cells[currentRowIndex][y]) extendable.add(Arrays.asList(currentRowIndex,y));
+			}
+			int size=extendable.size();
+			int count = (1==size)?
+					1 : SingleRandom.getRandom().nextIntWithinInterval(1, (int)Math.ceil((double)size/2.0));
+			HashSet<List<Integer>> nonExtendable = new HashSet<List<Integer>>(count);
+			
+			for(int i=0; i<count; i++) {
+				 /*
+				  * cell = random cell from extendable (array of two integers)
+				  * set cell's lower neighbor to cell's value
+				  */
+				List<Integer> cell = (List<Integer>)getArbitraryValueFromSet(extendable, size);
+				List<Integer> lowerCell = Arrays.asList(cell.get(0)+1, cell.get(1));
+				//cellSets.remove(getCellValue(lowerCell)); 
+				//addValueAtCell(lowerCell, setValue);
+				if(getCellValue(cell)!=getCellValue(lowerCell)) mergeSets(cell, lowerCell);
+				//call mergeSets instead of addValueAtCell because the lower cell could belong to a larger set if in a room
+				//the conditional is required because it is invalid to attempt joining cells which already share a room
+				/*
+				 * in floorplan, remove the wallboard between cell and lower neighbor
+				 * //remove wallboard between cell and cell's lower neighbor //non-defined extra step
+				 * remove cell from extendable
+				 * add cell to nonExtendable
+				 * remove cells in unextendable from extendable
+				 */
+				floorplan.deleteWallboard(new Wallboard(cell.get(0), cell.get(1), CardinalDirection.getDirection(1, 0)));
+				extendable.remove(cell);
+				nonExtendable.add(cell);
+				
+				size=extendable.size();
+			}
+		}
+		
+		
 		
 	}
-	
-	void link_CurrentRow_NewRow(int[] currentRow, int[] newRow) {
-		//TODO implement the missing part of Steps 3-5 in the pseudocoded algorithm
+
+	void handleLastRow() {
+		ArrayList<VerticalWallBoard> boards = getWallboardsInRow(cells[width-1], width-1);
+		for(VerticalWallBoard wall:boards) {
+			int[] left=wall.getLeft(), right=wall.getRight();
+			
+			/*
+				last row: remove all walls between distinct sets
+			*/
+			if (getCellValue(left)!=getCellValue(right) && !wall.isBorder()) {
+				mergeSets(left, right);
+				wall.removeFromFloorplan();
+			};
+		}
 	}
 	
-	void handleLastRow(int[] currentRow, int[] newRow) {
-		//TODO implement Steps 6 in the pseudocoded algorithm
-	}
-	
-	Object getRandomValueFromSet(Set s) {
+	private Object retreiveArbitrarySetValue(Set s, int iters) {
 		Object item=null;
+		int count = 0;
 		for(Object o: s) {
 			item=o;
-			break;
+			if(iters==count++) return item;
 		}
 		return item;
+	}
+	
+	Object getArbitraryValueFromSet(Set s) {
+		return retreiveArbitrarySetValue(s, 0);
+	}
+	
+	Object getArbitraryValueFromSet(Set s, int iters) {
+		return retreiveArbitrarySetValue(s, iters);
 	}
 	
 	HashSet<List<Integer>> getCellRoomNeighbors(List<Integer> cell){
@@ -209,28 +315,29 @@ public class MazeBuilderEller extends MazeBuilder implements Runnable {
 		List<Integer> current;
 		
 		while(newVisits.size()>0){
-			System.out.println("toVisit.size(): "+newVisits.size());
+			//System.out.println("toVisit.size(): "+newVisits.size());
 			visited.addAll(newVisits);
 			newVisits=getRoomNeighborsOfCells(newVisits);
+			// on iter 0 ...
+			// on iter > 0 ...
 			newVisits.removeIf(visited::contains);
 		}
-		/*
-		 * 
-		 * initialize visited={cell}
-		 * initialize new={neighbors of cell that are in room}
-		 * while new is not empty:
-		 *     visited.addAll(new);
-		 *     new={neighbors of every cell in new}
-		 *     new={cells in new that are not in visited}
-		 *     
-		 */
 		
 		return visited;
 	}
 	
+	/**
+	 * Initialize the set values in the cells array so that
+	 * (I) every cell not in a room belongs to its own set;
+	 * (II) every room is delegated a unique set for its own cells.
+	 * 
+	 */
 	void initializeCells() {
 		int count=1;
 		int value;
+		
+		// every cell not in a room gets unique integer value
+		// initially set all cells in rooms to 0
 		for(int x=0; x<width; x++) {
 			for(int y=0; y<height; y++) {
 				value = floorplan.isInRoom(x, y) ? 0 : count++;
@@ -242,7 +349,7 @@ public class MazeBuilderEller extends MazeBuilder implements Runnable {
 		List<Integer> randomCell;
 		int roomIndex=-1;
 		while(set0.size()>0) {
-			randomCell=(List<Integer>)getRandomValueFromSet(set0);
+			randomCell=(List<Integer>)getArbitraryValueFromSet(set0);
 			for(List<Integer> cell: getCellsInRoom(randomCell)) {
 				addValueAtCell(cell,roomIndex);
 				set0.remove(cell);
@@ -253,18 +360,13 @@ public class MazeBuilderEller extends MazeBuilder implements Runnable {
 		cellSets.remove(0);
 		
 		
-		/* TODO:
-		 * set0=cellSets.get(setValue)
-		 * 
-		 * while set0 is not empty:
-		 *     pick a random cell from set0;
-		 *     get all cells in the same room;
-		 *     for each cell{
-		 *         addValueAtCell(cell,roomIndex);
-		 *         remove cell from set0;
-		 *     }
-		 *     roomIndex--;
-		 */
+		/*
+		for(int x=1; x<4; x++) {
+			for(int y=12; y<17; y++) {
+				cells[x][y]=roomIndex;
+			}
+		}
+		*/
 	}
 	
 	@Override
@@ -276,27 +378,32 @@ public class MazeBuilderEller extends MazeBuilder implements Runnable {
 		initializeCells();
 		
 		System.out.println("cells has been initialized to:\n"+Arrays.deepToString(cells).replace("], [", "],\n["));
+		System.out.println("cellSets has keys: "+cellSets.keySet());
 		
-		System.out.println("About to throw an error to stop execution");
-		System.out.println((new int[] {})[2]);
+		//System.out.println("About to throw an error to stop execution");
+		//System.out.println((new int[] {})[2]);
 		
 		System.out.printf("width, height: %d, %d\n",width,height);
 		System.out.println("cells[0]:\n"+Arrays.toString(cells[0]));
 		int[] currentRow=null;
-		for(int rowIndex=0; rowIndex<width-1; rowIndex++) {
-			if(rowIndex>0) break; //take this out when link_CurrentRow_NewRow is implemented
+		for(int rowIndex=0; rowIndex<width; rowIndex++) {
+			//if(rowIndex>1) break; //take this out when link_CurrentRow_NewRow is implemented
 			int[] newRow = cells[rowIndex];
 			
 			//initializeRow(currentRow, newRow);
-			//replace the above line with initializeCells
+			//replaced with initializeCells
 			
 			if(null!=currentRow){
-				link_CurrentRow_NewRow(currentRow,newRow);
+				System.out.printf("cells[%d] before link_CurrentRow_NewRow:\n"+Arrays.toString(newRow)+"\n",rowIndex);
+				link_CurrentRow_NewRow(currentRow,newRow,rowIndex-1);
+				System.out.printf("cells[%d] after link_CurrentRow_NewRow:\n"+Arrays.toString(newRow)+"\n",rowIndex);
+				//throw new RuntimeException("MazeBuilderEller: stopping here for link_CurrentRow_NewRow test");
 			}
 			
-			wallRemovalFromRow(currentRow, newRow, rowIndex);
+			wallRemovalFromRow(newRow, rowIndex);
 			System.out.printf("cells[%d] after wall removal:\n"+Arrays.toString(cells[0])+"\n",rowIndex);
 			
+			/*
 			for(int i=0; i<height-1; i++) {
 				boolean sameSet = (cells[rowIndex][i]==cells[rowIndex][i+1]);
 				if(sameSet) {
@@ -316,13 +423,14 @@ public class MazeBuilderEller extends MazeBuilder implements Runnable {
 				String.format("x=%d, y=0: this cell SHOULD have a wall in the direction (0,-1), but does not",rowIndex);
 			assert floorplan.hasWall(0, height-1, VerticalWallBoard.cdForward): 
 				String.format("x=%d, y=%d: this cell SHOULD have a wall in the direction (0,1), but does not",rowIndex,height-1);
-			
+			*/
 			currentRow=newRow;
 		}
 		
-		//implement these lines when ready for Step 6
-		//newRow=cells[width-1];
-		//handleLastRow(currentRow,newRow)
+		handleLastRow();
+		
+		System.out.println("floorplan generated: cells:\n"+Arrays.deepToString(cells).replace("], [", "],\n["));
+		
 		
 		
 		throw new RuntimeException("MazeBuilderEller: not ready to proceed beyond this point");
