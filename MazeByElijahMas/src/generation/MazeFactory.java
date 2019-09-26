@@ -58,6 +58,10 @@ public class MazeFactory implements Factory {
 			builder = deterministic? new MazeBuilderPrim(true) : new MazeBuilderPrim();
 			buildOrder();
 			break;
+		case Eller:
+			builder = deterministic? new MazeBuilderEller(true) : new MazeBuilderEller();
+			buildOrder();
+			break;
 		default:
 			System.out.println("MazeFactory.order: missing implementation for requested algorithm: " + order.getBuilder());
 			return false;

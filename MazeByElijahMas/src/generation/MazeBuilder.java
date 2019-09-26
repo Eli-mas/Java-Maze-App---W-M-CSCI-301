@@ -52,11 +52,8 @@ public class MazeBuilder implements Runnable {
 	public MazeBuilder(boolean deterministic){
 		if (true == deterministic)
 		{
-			// Control random number generation
-			System.out.println("Assignment: functionality to make maze generation deterministic not implemented yet! Fix this! Program stops!");
-			System.exit(0) ;
-			// TODO: implement code that makes sure that if MazeBuilder.build is called for same the skill level twice, it will deliver the same results
-			// HINT: check http://download.oracle.com/javase/6/docs/api/java/util/Random.html\
+			SingleRandom.setSeed(7);
+			//System.out.println("deterministic maze building");
 		}
 		random = SingleRandom.getRandom();
 	}

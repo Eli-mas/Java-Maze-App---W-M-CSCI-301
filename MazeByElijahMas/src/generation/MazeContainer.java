@@ -43,6 +43,8 @@ public class MazeContainer implements Maze {
 	// exit position, such that the exit position in mazecells has the minimum distance value
 	// and is also the exit position in mazedists
 	
+	//DOCUMENTATION ISSUE: what does 'mazecells' refer to? 'floorplan'? 
+	
 	private BSPNode rootnode ; // a binary tree type search data structure to quickly locate a subset of segments
 	// a segment is a continuous sequence of wallboards in vertical or horizontal direction
 	// a subset of segments need to be quickly identified for drawing

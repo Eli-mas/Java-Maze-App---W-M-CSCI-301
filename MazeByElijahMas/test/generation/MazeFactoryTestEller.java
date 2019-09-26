@@ -37,7 +37,13 @@ public class MazeFactoryTestEller {
 	@Test
 	final public void testMaze() {
 		System.out.println("*  *  * running MazeBuilderEllerTest *  *  *");
-		getMaze(false);
+		for(int i=0; i<20; i++) System.out.print(SingleRandom.getRandom().nextIntWithinInterval(0, 1)+" ");
+		Maze maze = getMaze(false);
+		System.out.println("MazeBuilderEllerTest distances:\n"+arrayString2d(maze.getMazedists().getAllDistanceValues()));
+	}
+	
+	private String arrayString2d(Object array) {
+		return Arrays.deepToString((Object[]) array).replace("], [", "],\n[");
 	}
 	
 	public static Maze getMaze(boolean perfect){
@@ -48,7 +54,7 @@ public class MazeFactoryTestEller {
 		controller.turnOffGraphics();
 		
 		OrderStub order = new OrderStub();
-		order.setSkillLevel(4);
+		order.setSkillLevel(1);
 		order.setBuilder(Order.Builder.DFS); 
 		order.setPerfect(perfect);
 		//System.out.println("testline:");

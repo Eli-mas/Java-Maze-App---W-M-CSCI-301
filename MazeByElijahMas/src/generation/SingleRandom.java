@@ -40,6 +40,7 @@ public final class SingleRandom {
 			if (null == instance)
 			{
 				// create the one and only instance of the random number generator on demand
+				//System.out.println("first instantiation of SingleRandom");
 				instance = new SingleRandom();
 			}
 		}
@@ -74,6 +75,8 @@ public final class SingleRandom {
 		if (null != instance) {
 			System.out.println("Warning: SingleRandom already instantiated, resetting seed with value " + seed);
 			instance.generator.setSeed(seed) ;
+		}
+		else {
 		}
 		theSeed = seed;
 		validSeed = true;
