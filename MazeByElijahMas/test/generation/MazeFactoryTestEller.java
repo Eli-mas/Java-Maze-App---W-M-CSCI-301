@@ -1,14 +1,12 @@
 package generation;
 
 import static org.junit.Assert.*;
-
-import org.junit.Test;
-import org.junit.After;
-import org.junit.Before;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import gui.Controller;
 import generation.Order;
-import generation.Order.Builder;
+//import generation.Order.Builder;
 import generation.OrderStub;
 
 public class MazeFactoryTestEller extends MazeFactoryTest {
@@ -20,6 +18,27 @@ public class MazeFactoryTestEller extends MazeFactoryTest {
 	MazeBuilderEller builderPerfect;
 	MazeBuilderEller builderImperfect;
 	
+	@ParameterizedTest
+	@ValueSource(ints = {0,1,2,3,4,5,6,7,8})
+	@Override
+	public void runAllTests(int level) {
+		System.out.println("\n\n*   *   *   Eller: level="+level);
+		
+		establishMazes(level, true);
+		
+		allTests();
+	}
+	
+	/**
+	 * Adds new methods to the suite of tests for Eller's algorithm
+	 * beyond those specified in #{@link #baselineTests()}.
+	 */
+	@Override
+	public void allTests() {
+		baselineTests();
+		testCells();
+	}
+	
 	@Override
 	public Maze getMaze(boolean perfect, boolean deterministic, int level){
 		
@@ -30,13 +49,7 @@ public class MazeFactoryTestEller extends MazeFactoryTest {
 		order.setSkillLevel(level);
 		order.setBuilder(Order.Builder.Eller); 
 		order.setPerfect(deterministic ? true : perfect);
-		//System.out.println("testline:");
 		order.start(controller, null);
-		
-		/*MazeFactory factory = new MazeFactory(true);
-		factory.order(order);
-		factory.waitTillDelivered();*/
-		
 		
 		MazeBuilderEller builder = new MazeBuilderEller(deterministic);
 		builder.buildOrder(order);
@@ -45,7 +58,6 @@ public class MazeFactoryTestEller extends MazeFactoryTest {
 		try {
 			buildThread.join();
 		} catch (InterruptedException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 		
@@ -57,20 +69,15 @@ public class MazeFactoryTestEller extends MazeFactoryTest {
 			this.builderImperfect = builder;
 		}
 		
+		System.out.println("100");
+		
 		return order.getMaze();
 	}
 	
-	@Test
+	//@Test
 	public void testCells() {
 		_testCells(builderPerfect);
 		_testCells(builderImperfect);
-		for(int i=0; i<10; i++) {
-			Maze mazePerfect = getMaze(true, false, i);
-			Maze mazeImperfect = getMaze(false, false, i);
-			System.out.printf("testCells %d (L%d): %s %s\n",i,i,builderPerfect,builderImperfect);
-			_testCells(builderPerfect);
-			_testCells(builderImperfect);
-		}
 	}
 
 	public boolean _testCells(MazeBuilderEller builder) {
@@ -81,10 +88,5 @@ public class MazeFactoryTestEller extends MazeFactoryTest {
 		}
 		return true;
 	}
-
-	/*
-	 * think of test cases:
-	 * 
-	 */
 
 }

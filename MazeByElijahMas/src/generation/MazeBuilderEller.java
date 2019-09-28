@@ -50,7 +50,7 @@ public class MazeBuilderEller extends MazeBuilder implements Runnable {
 	
 	public MazeBuilderEller(boolean det) {
 		super(det);
-		System.out.println("MazeBuilderEller uses Eller's algorithm to generate a maze (deterministic enabled).");
+		//System.out.println("MazeBuilderEller uses Eller's algorithm to generate a maze (deterministic enabled).");
 		
 	}
 	
@@ -59,7 +59,7 @@ public class MazeBuilderEller extends MazeBuilder implements Runnable {
 	}
 	
 	/**
-	 * <p> Overrides {@code MazeBiulder$generatePathways}; generates pathways into maze
+	 * <p> Overrides {@link generation.MazeBuilder#generatePathways()}; generates pathways into maze
 	 * via wall removal by way of Eller's algorithm. Eller's algorithm follows these steps:
 	 *   <ol>
 	 *     <li> Initialize every cell in the maze:
@@ -198,7 +198,7 @@ public class MazeBuilderEller extends MazeBuilder implements Runnable {
 	/**
 	 * Get the set (as integer) to which a maze cell belongs.
 	 * 
-	 * @param cell
+	 * @param cell list containing {x,y}
 	 * @return the set of the cell
 	 */
 	private int getCellValue(List<Integer> cell) {
@@ -211,8 +211,8 @@ public class MazeBuilderEller extends MazeBuilder implements Runnable {
 	 * Greatly simplified by the fact that making a Set of values
 	 * automatically removes duplicates.
 	 * 
-	 * @param row
-	 * @return
+	 * @param row an array of int values
+	 * @return set of unique values in the row
 	 */
 	private static HashSet<Integer> getUniqueRowValues(int[] row){
 		HashSet<Integer> a = new HashSet<Integer>();
@@ -224,7 +224,7 @@ public class MazeBuilderEller extends MazeBuilder implements Runnable {
 	 * Return all the wallboards (as VerticalWallBoard instances)
 	 * positioned between the cells of a row, i.e. excluding the border cells.
 	 * 
-	 * @param rowIndex
+	 * @param rowIndex index of the row
 	 * @return list of vertical wallboards in cell row
 	 */
 	ArrayList<VerticalWallBoard> getVerticalWallboardsInRow(int rowIndex){
@@ -242,16 +242,17 @@ public class MazeBuilderEller extends MazeBuilder implements Runnable {
 		/* the decision process for removing the wall:
 		 *     if forceRemoval, the wall will be removed if its surrounding cell-sets are distinct
 		 *     otherwise the wall may be removed:
-		 *         if a border wall, there is a 25% chance of removal
+		 *         if a border wall, do not remove
 		 *         if not a border, there is a 50% chance of removal
 		*/
 		if(!forceRemoval) {
 			if(considerBorder && wall.isBorder()) {
-				// Borders are marked as non-removals, but Eller's algorithm must find a solution
-				// this increases the likelihood that the algorithm resolves
-				// 25% chance of removal
-				int cancel = SingleRandom.getRandom().nextIntWithinInterval(0, 3);
-				if(0==cancel) return;
+				// we could use the lines below to probabilistically remove border walls
+				// but as per use of roomWalls this is not required
+				
+				//int cancel = SingleRandom.getRandom().nextIntWithinInterval(0, 3);
+				//if(0==cancel)
+					return;
 			}
 			// 50% chance of removal
 			else if(1==SingleRandom.getRandom().nextIntWithinInterval(0, 1)? true: false) return;
@@ -293,8 +294,13 @@ public class MazeBuilderEller extends MazeBuilder implements Runnable {
 		//make things more interesting by randomizing the order of iteration
 		for(int index: IntStream.range(0, height-1).toArray()){
 			VerticalWallBoard wall = boards.get(index);
-			// boolean flags indicate wall removal is conducted probabilistically, border is considered
+			// wall removal is conducted probabilistically, border is considered
 			attemptWallboardRemoval(wall, true, false);
+		}
+		
+		for(VerticalWallBoard wall: boards) {
+			int[] left = wall.getBackCell(), right = wall.getForthCell();
+			if( cells[left[0]][left[1]] != cells[right[0]][right[1]] ) assert(true);
 		}
 	}
 	
@@ -323,8 +329,8 @@ public class MazeBuilderEller extends MazeBuilder implements Runnable {
 	/**
 	 * (wrapper for {@code addValueAtCell(List<Integer>)}, allows for input of type {@code int[]})
 	 * 
-	 * @param cell
-	 * @param setValue
+	 * @param cell array containing {x,y}
+	 * @param setValue the set to which the cell belongs
 	 */
 	private void addValueAtCell(int[] cell, int setValue) {
 		List<Integer> cellList = Arrays.asList(cell[0],cell[1]);
@@ -334,10 +340,10 @@ public class MazeBuilderEller extends MazeBuilder implements Runnable {
 	/**
 	 * get the maximum value of a row
 	 * initialize
-	 * @param row
-	 * @return
+	 * @param row array of int values
+	 * @return maximal value of the row
 	 */
-	int rowMax(int[] row) {
+	static int rowMax(int[] row) {
 		int max=row[0];
 		for(int v: row) {
 			if(v>max) max=v;
@@ -431,7 +437,7 @@ public class MazeBuilderEller extends MazeBuilder implements Runnable {
 	 * generated elsewhere to the {@code iters} parameter.</p>
 	 * 
 	 * @param s the set of objects
-	 * @param the position in the iteration at which to return
+	 * @param iters the position in the iteration at which to return
 	 * @return an object from the set
 	 */
 	@SuppressWarnings("rawtypes")
@@ -442,7 +448,7 @@ public class MazeBuilderEller extends MazeBuilder implements Runnable {
 		int count = 0;
 		for(Object o: s) {
 			item=o;
-			if(iters==count++) return item; //count increments for each iteration
+			if(iters==count++) return item; //increment count for each iteration
 		}
 		
 		// compiler complains without this statement
@@ -450,7 +456,7 @@ public class MazeBuilderEller extends MazeBuilder implements Runnable {
 	}
 	
 	/**
-	 * (wrapper around {@ode retreiveArbitrarySetValue(Set s, int iters)}
+	 * (wrapper around {@code retreiveArbitrarySetValue(Set s, int iters)}
 	 * that sets default value of {@code iters} to 0)
 	 * 
 	 * @param s set
@@ -462,7 +468,7 @@ public class MazeBuilderEller extends MazeBuilder implements Runnable {
 	}
 	
 	/**
-	 * (wrapper around {@ode retreiveArbitrarySetValue(Set s, int iters)}
+	 * (wrapper around {@code retreiveArbitrarySetValue(Set s, int iters)}
 	 * that allows for variable value of {@code iters})
 	 * 
 	 * @param s set
@@ -518,7 +524,7 @@ public class MazeBuilderEller extends MazeBuilder implements Runnable {
 	 * Given an input cell,
 	 * get all of the cells in the same room as this cell.
 	 * 
-	 * @param cell
+	 * @param cell list containing {x,y}
 	 * @return complete set of cells occupying the room this cell is in
 	 */
 	HashSet<List<Integer>> getCellsInRoom(List<Integer> cell){
@@ -545,13 +551,11 @@ public class MazeBuilderEller extends MazeBuilder implements Runnable {
 	}
 	
 	/**
-	 * <p>
 	 * Initialize the set values in the cells array so that
 	 *     <ul>
 	 *       <li> every cell not in a room belongs to its own set; </li>
 	 *       <li> every room is delegated a unique set for its own cells. </li>
 	 *     </ul>
-	 * </p>
 	 */
 	@SuppressWarnings("unchecked")
 	void initializeCells() {
@@ -586,24 +590,29 @@ public class MazeBuilderEller extends MazeBuilder implements Runnable {
 				set0.remove(cell);
 			}
 			
-			ArrayList<OrientedWallBoard> roomBorders = new ArrayList<OrientedWallBoard>(2*(width+height-1));
-			roomWalls.put(roomIndex, roomBorders);
+			//should wind up with 2*(width+height-1) cells
+			ArrayList<OrientedWallBoard> walls = new ArrayList<OrientedWallBoard>(2*(width+height-1));
+			roomWalls.put(roomIndex, walls);
 			
 			int rX,rY;
 			int[] d;
 			OrientedWallBoard wall=null;
+			
+			// add walls around the room to a set that can be accessed later
+			// we only add non-border walls
 			for(List<Integer> cell: cellSets.get(roomIndex)) {
 				for(CardinalDirection cd: CardinalDirection.values()) {
 					rX=cell.get(0);
 					rY=cell.get(1);
 					if(floorplan.hasWall(rX, rY, cd)) {
+						//check every direction for wall
 						d=cd.getDirection();
 						int[] cell1=new int[] {rX,rY}, cell2=new int[] {rX+d[0],rY+d[1]};
 						if(-1==d[0] && 0==d[1]) wall = new HorizontalWallBoard(cell2, cell1, this);
 						else if(1==d[0] && 0==d[1]) wall = new HorizontalWallBoard(cell1, cell2, this);
 						else if(0==d[0] && -1==d[1]) wall = new VerticalWallBoard(cell2, cell1, this);
 						else if(0==d[0] && 1==d[1]) wall = new VerticalWallBoard(cell1, cell2, this);
-						roomBorders.add(wall);
+						if(!wall.isBorder()) walls.add(wall);
 					}
 				}
 			};
@@ -615,57 +624,111 @@ public class MazeBuilderEller extends MazeBuilder implements Runnable {
 
 }
 
+/**
+ * A wallboard that is oriented vertically, sitting between two cells in a row.
+ * 
+ * @author Elijah Mas
+ *
+ */
 class VerticalWallBoard extends OrientedWallBoard{
+	static final CardinalDirection cdBack = cdBackWithinRow;
+	static final CardinalDirection cdForward = cdForwardWithinRow;
+	
 	/**
 	 * Only constructor for the class. Sets left/right cell based on input values,
 	 * and identifies the wallboard in the floorplan.
+	 * Check that the input cells are valid (same y-value, x-values differ by 1).
+	 * Defers to {@link #initialize(int[], int[], MazeBuilderEller)}.
 	 * 
 	 * @param cellBack cell to the wall's left
 	 * @param cellForth cell to the wall's right
-	 * @param floorplan floorplan in which the wall is embedded
+	 * @param builder {@code MazeBuilderEller} instance
 	 */
 	public VerticalWallBoard(int[] cellBack, int[] cellForth, MazeBuilderEller builder) {
-		//a vertical wallboard must abut two cells in the same row, i.e. same x-values
+		// assertion to make sure I know how Java's semantics work
+		assert(cdBack==cdBackWithinRow && cdForward==cdForwardWithinRow);
+		
+		// a vertical wallboard must abut two cells in the same row, i.e. same x-values
 		if(cellBack[0]!=cellForth[0]) throw new RuntimeException(String.format("VerticalWallBoard constructor: cellLeft "
 				+ "and cellRight have different x-values: %d, %d",cellBack[0],cellForth[0]));
+		// y-values should differ by 1
 		if(1!=cellForth[1]-cellBack[1]) throw new RuntimeException(String.format("VerticalWallBoard constructor: cellLeft "
 				+ "and cellRight have incompatible y-values: %d, %d",cellBack[1],cellForth[1]));
 		
 		initialize(cellBack, cellForth, builder);
 	}
 	
+	/**
+	 * For this class, {@code cellBack} and {@code cellForth} refer to
+	 * cells forward/backward within row.
+	 */
 	@Override
 	Wallboard makeWall(int[] cellBack, int[] cellForth) {
 		return new Wallboard(cellBack[0],cellBack[1],cdForwardWithinRow);
 	}
 	
 }
+
+
+/**
+ * A wallboard that is oriented horizontally, sitting between two cells in different rows.
+ * 
+ * @author Elijah Mas
+ *
+ */
 class HorizontalWallBoard extends OrientedWallBoard{
+	static final CardinalDirection cdBack = cdBackAcrossRows;
+	static final CardinalDirection cdForward = cdForwardAcrossRows;
+	
 	/**
-	 * Only constructor for the class. Sets top/bottom cell based on input values,
+	 * Sets top/bottom cell based on input values,
 	 * and identifies the wallboard in the floorplan.
 	 * 
-	 * @param cellBack cell to the wall's left
-	 * @param cellForth cell to the wall's right
-	 * @param floorplan floorplan in which the wall is embedded
+	 * @param cellBack cell above the wall
+	 * @param cellForth cell beneath the wall
+	 * @param builder {@code MazeBuilderEller} instance
 	 */
 	public HorizontalWallBoard(List<Integer> cellBack, List<Integer> cellForth, MazeBuilderEller builder) {
 		init(new int[] {cellBack.get(0), cellBack.get(1)}, new int[] {cellForth.get(0),cellForth.get(1)}, builder);
 	}
 	
+	/**
+	 * Sets top/bottom cell based on input values,
+	 * and identifies the wallboard in the floorplan.
+	 * 
+	 * @param cellBack cell above the wall
+	 * @param cellForth cell beneath the wall
+	 * @param builder {@code MazeBuilderEller} instance
+	 */
 	public HorizontalWallBoard(int[] cellBack, int[] cellForth, MazeBuilderEller builder) {
 		init(cellBack, cellForth, builder);
 	}
 	
+	/**
+	 * For this class, {@code cellBack} and {@code cellForth} refer to
+	 * cells forward/backward across rows.
+	 */
 	@Override
 	Wallboard makeWall(int[] cellBack, int[] cellForth) {
 		return new Wallboard(cellBack[0],cellBack[1],cdForwardAcrossRows);
 	}
 	
+	/**
+	 * Check that the input cells are valid (same y-value, x-values differ by 1).
+	 * Defers to {@link #initialize(int[], int[], MazeBuilderEller)}.
+	 * 
+	 * @param cellBack cell above the wall
+	 * @param cellForth cell beneath the wall
+	 * @param builder {@code MazeBuilderEller} instance
+	 */
 	private void init(int[] cellBack, int[] cellForth, MazeBuilderEller builder) {
-		//a vertical wallboard must abut two cells in the same row, i.e. same x-values
+		// assertion to make sure I know how Java's semantics work
+		assert(cdBack==cdBackAcrossRows && cdForward==cdForwardAcrossRows);
+		
+		//a horizontal wallboard must abut two cells in the same column, i.e. same y-values
 		if(cellBack[1]!=cellForth[1]) throw new RuntimeException(String.format("VerticalWallBoard constructor: cellLeft "
 				+ "and cellRight have different y-values: %d, %d",cellBack[1],cellForth[1]));
+		// x-values should differ by 1
 		if(1!=cellForth[0]-cellBack[0]) throw new RuntimeException(String.format("VerticalWallBoard constructor: cellLeft "
 				+ "and cellRight have incompatible x-values: %d, %d",cellBack[0],cellForth[0]));
 		
@@ -678,7 +741,7 @@ class HorizontalWallBoard extends OrientedWallBoard{
 /**
  * Wrapper around (not subclass of) the {@code Wallboard} class that allows
  * for convenient access of cells adjoining the wallboard
- * and location of the wallboard in the floorplan.
+ * and location/removal of the wallboard in the floorplan.
  * 
  * Abstract class that is meant to be instantiated in the
  * {@link generation.VerticalWallBoard} or {@link generation.HorizontalWallBoard} classes.
@@ -692,6 +755,8 @@ abstract class OrientedWallBoard{
 	static final CardinalDirection cdForwardWithinRow= CardinalDirection.getDirection(0, 1);
 	static final CardinalDirection cdBackAcrossRows = CardinalDirection.getDirection(-1, 0);
 	static final CardinalDirection cdForwardAcrossRows= CardinalDirection.getDirection(1, 0);
+	
+	static CardinalDirection cdBack, cdForward;
 	
 	private Wallboard wall; // the referent wall (wallboard)
 	private int[] cellBack; // cell to the left of the wall
@@ -734,7 +799,9 @@ abstract class OrientedWallBoard{
 	}
 	
 	/**
-	 * test whether the wall is a border, simpler wrapper around {@code floorplan.isPartOfBorder}
+	 * Test whether the wall is a border, simpler wrapper around {@code floorplan.isPartOfBorder}
+	 * 
+	 * @return boolean:{the wall is a border}
 	 */
 	public boolean isBorder() {
 		return floorplan.isPartOfBorder(wall);
@@ -742,6 +809,8 @@ abstract class OrientedWallBoard{
 	
 	/**
 	 * convenient string representation of wallboard: display its neighbors.
+	 * 
+	 * @return string displaying neighbor cells
 	 */
 	@Override
 	public String toString() {

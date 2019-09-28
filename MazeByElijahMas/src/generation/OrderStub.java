@@ -1,6 +1,6 @@
 package generation;
 
-import generation.Order.Builder;
+//import generation.Order.Builder;
 import gui.Controller;
 import gui.DefaultState;
 import gui.MazePanel;
@@ -20,6 +20,9 @@ public class OrderStub extends DefaultState implements Order{
 	private int percentdone;
 
 	boolean started;
+	
+	private int updatePrintThreshold=5;
+	private boolean hasReachedDone=false;
 	
 	private Maze mazeConfig;
 	
@@ -84,31 +87,35 @@ public class OrderStub extends DefaultState implements Order{
 	public int getSkillLevel() {
 		return skillLevel;
 	}
+	
 	@Override
 	public Builder getBuilder() {
 		return builder;
 	}
+	
 	@Override
 	public boolean isPerfect() {
 		return perfect;
 	}
+	
 	public int getPercentDone() {
 		return percentdone;
 	}
 	
-    @Override
-    public void updateProgress(int percentage) {
-        /*
-        if (this.percentdone < percentage && percentage <= 100) {
-            this.percentdone = percentage;
-            draw() ;
-        }
-        */
-    }
-    
-    public Maze getMaze(){
-    	return mazeConfig;
-    }
-	
+	@Override
+	public void updateProgress(int percentage) {
+		//would
+		if (this.percentdone < percentage && percentage < 100) {
+			this.percentdone = percentage;
+			if(percentage>updatePrintThreshold) {
+				System.out.print(percentage+"  ");
+				updatePrintThreshold+=5;
+			}
+		}
+	}
+	    
+	public Maze getMaze(){
+		return mazeConfig;
+	}
 }
 
