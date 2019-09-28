@@ -6,57 +6,30 @@ import org.junit.Test;
 import org.junit.After;
 import org.junit.Before;
 
-import java.util.Arrays;
-import java.util.ArrayList;
-import java.util.Iterator;
-
 import gui.Controller;
-import gui.MazePanel;
-import gui.SimpleScreens;
-import gui.StateGenerating;
 import generation.Order;
 import generation.Order.Builder;
-import gui.DefaultState;
-import gui.MazeFileReader;
 import generation.OrderStub;
 
-public class MazeFactoryTestEller {
+public class MazeFactoryTestEller extends MazeFactoryTest {
 	Maze perfectMaze;
 	Maze imperfectMaze;
 	int width, height;
+	OrderStub orderPerfect;
+	OrderStub orderImperfect;
+	MazeBuilderEller builderPerfect;
+	MazeBuilderEller builderImperfect;
 	
-	//@Before
-	final public void establishMazes() {
-		perfectMaze=getMaze(true);
-		imperfectMaze=getMaze(false);
-		width=perfectMaze.getWidth();
-		height=perfectMaze.getHeight();
-		
-	}
-	
-	@Test
-	final public void testMaze() {
-		System.out.println("*  *  * running MazeBuilderEllerTest *  *  *");
-		for(int i=0; i<20; i++) System.out.print(SingleRandom.getRandom().nextIntWithinInterval(0, 1)+" ");
-		Maze maze = getMaze(false);
-		System.out.println("MazeBuilderEllerTest distances:\n"+arrayString2d(maze.getMazedists().getAllDistanceValues()));
-	}
-	
-	private String arrayString2d(Object array) {
-		return Arrays.deepToString((Object[]) array).replace("], [", "],\n[");
-	}
-	
-	public static Maze getMaze(boolean perfect){
-		/*
-		*/
+	@Override
+	public Maze getMaze(boolean perfect, boolean deterministic, int level){
 		
 		Controller controller = new Controller();
 		controller.turnOffGraphics();
 		
 		OrderStub order = new OrderStub();
-		order.setSkillLevel(1);
-		order.setBuilder(Order.Builder.DFS); 
-		order.setPerfect(perfect);
+		order.setSkillLevel(level);
+		order.setBuilder(Order.Builder.Eller); 
+		order.setPerfect(deterministic ? true : perfect);
 		//System.out.println("testline:");
 		order.start(controller, null);
 		
@@ -65,7 +38,7 @@ public class MazeFactoryTestEller {
 		factory.waitTillDelivered();*/
 		
 		
-		MazeBuilderEller builder = new MazeBuilderEller(true);
+		MazeBuilderEller builder = new MazeBuilderEller(deterministic);
 		builder.buildOrder(order);
 		Thread buildThread = new Thread(builder);
 		buildThread.start();
@@ -76,8 +49,42 @@ public class MazeFactoryTestEller {
 			e.printStackTrace();
 		}
 		
+		if(perfect) {
+			this.orderPerfect=order;
+			this.builderPerfect = builder;
+		} else {
+			this.orderImperfect=order;
+			this.builderImperfect = builder;
+		}
 		
 		return order.getMaze();
 	}
+	
+	@Test
+	public void testCells() {
+		_testCells(builderPerfect);
+		_testCells(builderImperfect);
+		for(int i=0; i<10; i++) {
+			Maze mazePerfect = getMaze(true, false, i);
+			Maze mazeImperfect = getMaze(false, false, i);
+			System.out.printf("testCells %d (L%d): %s %s\n",i,i,builderPerfect,builderImperfect);
+			_testCells(builderPerfect);
+			_testCells(builderImperfect);
+		}
+	}
+
+	public boolean _testCells(MazeBuilderEller builder) {
+		for(int[] row: builder.retrieve_cells()) {
+			for(int v: row) {
+				if(1!=v) return false;
+			}
+		}
+		return true;
+	}
+
+	/*
+	 * think of test cases:
+	 * 
+	 */
 
 }
