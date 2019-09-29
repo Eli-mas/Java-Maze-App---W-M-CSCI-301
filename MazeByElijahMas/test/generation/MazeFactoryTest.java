@@ -58,6 +58,10 @@ public class MazeFactoryTest {
 		perfectMaze=getMaze(true,deterministic,level);
 		imperfectMaze=getMaze(false,deterministic,level);
 		
+		if(null==perfectMaze || null==imperfectMaze) {
+			throw new RuntimeException("MazeFactoryTest.establishMazes: the maze order is not successful");
+		}
+		
 		//mazes have same dimensions
 		width=perfectMaze.getWidth();
 		height=perfectMaze.getHeight();
@@ -135,7 +139,6 @@ public class MazeFactoryTest {
 	 * @return the cells in the maze whose distance to the exit is 1
 	 */
 	protected ArrayList<int[]> getMazeExitsByDistance(Maze maze){
-		int count=0;
 		int[][] dists = maze.getMazedists().getAllDistanceValues();
 		ArrayList<int[]> exitCells = new ArrayList<int[]>();
 		
@@ -206,7 +209,6 @@ public class MazeFactoryTest {
 	 * @return the cells in the maze whose distance to the exit is 1
 	 */
 	protected ArrayList<int[]> getMazeExitsByBorders(Maze maze){
-		int count=0;
 		Floorplan floorplan = maze.getFloorplan();
 		ArrayList<int[]> exitCells = new ArrayList<int[]>();
 		
@@ -435,13 +437,15 @@ public class MazeFactoryTest {
 		buildThread.start();
 		try {
 			buildThread.join();
+			System.out.println("100");
+			
+			return order.getMaze();
 		} catch (InterruptedException e) {
+			System.out.println("\n--Intteruption--");
 			e.printStackTrace();
+			return null;
 		}
 		
-		System.out.println("100");
-		
-		return order.getMaze();
 	}
 }
 

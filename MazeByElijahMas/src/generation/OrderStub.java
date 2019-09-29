@@ -21,8 +21,7 @@ public class OrderStub extends DefaultState implements Order{
 
 	boolean started;
 	
-	private int updatePrintThreshold=5;
-	private boolean hasReachedDone=false;
+	private int updatePrintThreshold=0;
 	
 	private Maze mazeConfig;
 	
@@ -36,9 +35,12 @@ public class OrderStub extends DefaultState implements Order{
 		started = false;
 	}
 	
+	/**
+	 * WARNING: this class does not provide functionality for reading from file
+	 */
 	@Override
 	public void setFileName(String filename) {
-		this.filename = filename;  
+		throw new RuntimeException("OrderStub.setFileName: cannot instantiate filename");
 	}
 	@Override
 	public void setSkillLevel(int skillLevel) {
@@ -53,15 +55,11 @@ public class OrderStub extends DefaultState implements Order{
 		perfect = isPerfect;
 	}
 	
-	/*
-	private Maze loadMazeConfigurationFromFile(String filename) {
-		// load maze from file
-		MazeFileReader mfr = new MazeFileReader(filename) ;
-		// obtain MazeConfiguration
-		return mfr.getMazeConfiguration();
-	}
-	*/
-	
+	/**
+	 * Lightweight start method providing minimal required functionality
+	 * to order a maze from a factory.
+	 */
+	@Override
 	public void start(Controller controller, MazePanel panel) {
 		started = true;
 		control = controller;
@@ -69,16 +67,15 @@ public class OrderStub extends DefaultState implements Order{
 		percentdone = 0;
 		
 		
-		if (filename != null) {
-			//deliver(loadMazeConfigurationFromFile(filename));
-			filename = null;  
-		} else {
-			assert null != factory : "Controller.init: factory must be present";
-			//draw();
-			factory.order(this) ;
-		}
+		assert null != factory : "Controller.init: factory must be present";
+		factory.order(this) ;
 	}
 	
+	/**
+	 * assigns the {@code mazeConfig} created by the factory
+	 * to an internal field, which can be accessed for testing.
+	 */
+	@Override
 	public void deliver(Maze mazeConfig) {
 		this.mazeConfig=mazeConfig;
 	}
@@ -98,13 +95,12 @@ public class OrderStub extends DefaultState implements Order{
 		return perfect;
 	}
 	
-	public int getPercentDone() {
-		return percentdone;
-	}
-	
+	/**
+	 * Print update on progress to standard out.
+	 * Not thread-safe, but this is not critical.
+	 */
 	@Override
 	public void updateProgress(int percentage) {
-		//would
 		if (this.percentdone < percentage && percentage < 100) {
 			this.percentdone = percentage;
 			if(percentage>updatePrintThreshold) {
@@ -113,7 +109,11 @@ public class OrderStub extends DefaultState implements Order{
 			}
 		}
 	}
-	    
+	
+	/**
+	 * Return the generated maze for testing.
+	 * @return factory-generated maze
+	 */
 	public Maze getMaze(){
 		return mazeConfig;
 	}

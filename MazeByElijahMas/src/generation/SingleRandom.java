@@ -73,7 +73,7 @@ public final class SingleRandom {
 	 */
 	public static void setSeed(final int seed) {
 		if (null != instance) {
-			System.out.println("Warning: SingleRandom already instantiated, resetting seed with value " + seed);
+			//System.out.println("Warning: SingleRandom already instantiated, resetting seed with value " + seed);
 			instance.generator.setSeed(seed) ;
 		}
 		else {

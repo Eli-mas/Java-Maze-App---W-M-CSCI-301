@@ -33,10 +33,10 @@ public class MazeBuilderEller extends MazeBuilder implements Runnable {
 	/*
 	cellSets:
 	as sets of cells are created and subsequently merged, cellSets keeps track of them
-	A HashSet allows for easy lookup, BUT
+	A HashSet allows for easy lookup, but
 		Arrays.equals() works by identity, not value; so we cannot use int[]
-		use List<Integer> instead
-		as advised here: https://stackoverflow.com/questions/17606839/creating-a-set-of-arrays-in-java
+		>> solution: use List<Integer> instead,
+		   as advised here: https://stackoverflow.com/questions/17606839
 	*/
 	private HashMap<Integer,HashSet<List<Integer>>> cellSets;
 	
@@ -54,9 +54,31 @@ public class MazeBuilderEller extends MazeBuilder implements Runnable {
 		
 	}
 	
+	/**
+	 * Get the cells of set values for all coordinates in the maze. Used for testing.
+	 * @return int[][] array holding set values.
+	 */
 	protected int[][] retrieve_cells() {
 		return cells;
 	}
+	
+	protected HashMap retrieve_cellSets() {
+		return cellSets;
+	}
+	
+	/** 
+	 * ignoreRooms:
+	 * 
+	 * this is only used for testing purposes
+	 * 
+	 * say we want to test what happens if Eller's algorithm finishes,
+	 * but by chance leaves a room with all walls standing
+	 * 
+	 * this is not very likely to happen by chance,
+	 * so this flag is used to ensure it happens,
+	 * so that the relevant functionality can be tested
+	*/
+	boolean ignoreRooms = false;
 	
 	/**
 	 * <p> Overrides {@link generation.MazeBuilder#generatePathways()}; generates pathways into maze
@@ -97,32 +119,33 @@ public class MazeBuilderEller extends MazeBuilder implements Runnable {
 		
 		handleLastRow();
 		
-		HashSet<Integer> roomValues = checkNoRooms();
-		if(roomValues.size()!=0) {
-			for(int v:roomValues) {
-				ArrayList<OrientedWallBoard> roomBorders = roomWalls.get(v);
-				
-				// remove 2 walls if possible, otherwise just 1
-				int removals = roomBorders.size()>1? 2 : 1;
-				for(int i=0; i<removals; i++) {
-					int index=SingleRandom.getRandom().nextIntWithinInterval(0, roomBorders.size()-1);
-					attemptWallboardRemoval(roomBorders.get(index), false, true);
-					roomBorders.remove(index);
-				}
+		// if we forget to reset ignoreRooms, the while loop is infinite,
+		// as we are not allowed to open rooms (sets with value < 0)
+		ignoreRooms=false;
+		while(true) {
+			Set<Integer> roomValues = new HashSet<Integer>(cellSets.keySet());
+			roomValues.remove(1);
+			if(0==roomValues.size()) break;
+			int set = (int)getArbitraryValueFromSet(roomValues);
+			ArrayList<OrientedWallBoard> roomBorders = getRemovableWallsOfGroup(set);
+			
+			// remove 2 walls if possible, otherwise just 1
+			int removals = roomBorders.size()>1? 2 : 1;
+			for(int i=0; i<removals; i++) {
+				int index=SingleRandom.getRandom().nextIntWithinInterval(0, roomBorders.size()-1);
+				attemptWallboardRemoval(roomBorders.get(index), false, true);
+				roomBorders.remove(index);
 			}
 		}
 		
 	}
 	
-	HashSet<Integer> checkNoRooms() {
-		HashSet<Integer> roomValues = new HashSet<Integer>();
-		for(int[] row: cells) {
-			for(int y:row) {
-				if(y<0) roomValues.add(y);
-			}
-		}
-		
-		return roomValues;
+	/**
+	 * Toggle ignoreRooms=true externally;
+	 * only used in testing.
+	 */
+	void setToIgnoreRooms() {
+		ignoreRooms=true;
 	}
 	
 	/**
@@ -161,6 +184,7 @@ public class MazeBuilderEller extends MazeBuilder implements Runnable {
 		}
 		// case where one cell is in a room
 		if(receiver<0) {
+			//if(ignoreRooms) return;
 			int temp=receiver;
 			receiver=absorbed;
 			absorbed=temp;
@@ -245,6 +269,8 @@ public class MazeBuilderEller extends MazeBuilder implements Runnable {
 		 *         if a border wall, do not remove
 		 *         if not a border, there is a 50% chance of removal
 		*/
+		if(ignoreRooms && wall.hasRoomNeighbor()) return;
+		
 		if(!forceRemoval) {
 			if(considerBorder && wall.isBorder()) {
 				// we could use the lines below to probabilistically remove border walls
@@ -288,8 +314,16 @@ public class MazeBuilderEller extends MazeBuilder implements Runnable {
 	 * </p>
 	 * @param rowIndex the index of the row
 	 */
+	@SuppressWarnings("unchecked")
 	private void wallRemovalFromRow(int rowIndex){
 		ArrayList<VerticalWallBoard> boards = getVerticalWallboardsInRow(rowIndex);
+		ArrayList<int[]> initialSetValues = new ArrayList<int[]>(boards.size());
+		for(VerticalWallBoard wall: boards) {
+			initialSetValues.add(new int[] {
+					getCellValue(wall.getBackCell()),
+					getCellValue(wall.getForthCell())
+			});
+		}
 		
 		//make things more interesting by randomizing the order of iteration
 		for(int index: IntStream.range(0, height-1).toArray()){
@@ -300,8 +334,34 @@ public class MazeBuilderEller extends MazeBuilder implements Runnable {
 		
 		for(VerticalWallBoard wall: boards) {
 			int[] left = wall.getBackCell(), right = wall.getForthCell();
-			if( cells[left[0]][left[1]] != cells[right[0]][right[1]] ) assert(true);
+			
+			// if the cells are in in different sets, there must be a separating wall
+			if( getCellValue(left) != getCellValue(right) ) assert wall.isPresent();
+			
+			// I have not found an analogously simple assertion
+			// (one that involves nothing more than checking the presence of walls)
+			// for the case where the cells are in the same set;
+			// for this we have the test below outside this loop
 		}
+		
+		// assert that there are no isolated cells: i.e.,
+		// every cell that is part of a set can be reached from every other cell in the set
+		// it is sufficient to choose one cell at random and then walk to its reachable neighbors
+		// in the set; if any cells are disconnected, this test fails
+		for(int setValue:cellSets.keySet())
+				assert getCellsInRoom(
+						(List<Integer>) getArbitraryValueFromSet(cellSets.get(setValue))
+					).size()==countSetOccurrence(setValue);
+	}
+	
+	private int countSetOccurrence(int setValue) {
+		int count=0;
+		for(int[] row: cells) {
+			for(int v: row) {
+				if(v==setValue) count++;
+			}
+		}
+		return count;
 	}
 	
 	/**
@@ -335,20 +395,6 @@ public class MazeBuilderEller extends MazeBuilder implements Runnable {
 	private void addValueAtCell(int[] cell, int setValue) {
 		List<Integer> cellList = Arrays.asList(cell[0],cell[1]);
 		addValueAtCell(cellList, setValue);
-	}
-	
-	/**
-	 * get the maximum value of a row
-	 * initialize
-	 * @param row array of int values
-	 * @return maximal value of the row
-	 */
-	static int rowMax(int[] row) {
-		int max=row[0];
-		for(int v: row) {
-			if(v>max) max=v;
-		}
-		return max;
 	}
 	
 	/**
@@ -551,6 +597,50 @@ public class MazeBuilderEller extends MazeBuilder implements Runnable {
 	}
 	
 	/**
+	 * Given a group of cells that belong to a set,
+	 * get the walls surrounding this set that are removable
+	 * (i.e., not borders)
+	 * @param set the integer value identifying the set
+	 * @return the removable walls around this set
+	 */
+	private ArrayList<OrientedWallBoard> getRemovableWallsOfGroup(int set) {
+		ArrayList<OrientedWallBoard> walls = new ArrayList<OrientedWallBoard>();
+		
+		int rX,rY;
+		int[] d;
+		OrientedWallBoard wall=null;
+		
+		// add walls around the room to a set that can be accessed later
+		// we only add non-border walls
+		for(List<Integer> cell: cellSets.get(set)) {
+			for(CardinalDirection cd: CardinalDirection.values()) {
+				rX=cell.get(0);
+				rY=cell.get(1);
+				if(floorplan.hasWall(rX, rY, cd)) {
+					//check every direction for wall
+					d=cd.getDirection();
+					int[] cell1=new int[] {rX,rY}, cell2=new int[] {rX+d[0],rY+d[1]};
+					
+					// reject wall on maze periphery
+					// it is true that we check for a border a few lines down;
+					// but that check will throw an exception if cell2 is out of bounds
+					if(cell2[0]<0 || cell2[0]>width || cell2[1]<0 || cell2[1]>height) continue;
+					
+					if(-1==d[0] && 0==d[1]) wall = new HorizontalWallBoard(cell2, cell1, this);
+					else if(1==d[0] && 0==d[1]) wall = new HorizontalWallBoard(cell1, cell2, this);
+					else if(0==d[0] && -1==d[1]) wall = new VerticalWallBoard(cell2, cell1, this);
+					else if(0==d[0] && 1==d[1]) wall = new VerticalWallBoard(cell1, cell2, this);
+					
+					if(!wall.isBorder())
+						walls.add(wall);
+				}
+			}
+		}
+		
+		return walls;
+	}
+	
+	/**
 	 * Initialize the set values in the cells array so that
 	 *     <ul>
 	 *       <li> every cell not in a room belongs to its own set; </li>
@@ -590,32 +680,6 @@ public class MazeBuilderEller extends MazeBuilder implements Runnable {
 				set0.remove(cell);
 			}
 			
-			//should wind up with 2*(width+height-1) cells
-			ArrayList<OrientedWallBoard> walls = new ArrayList<OrientedWallBoard>(2*(width+height-1));
-			roomWalls.put(roomIndex, walls);
-			
-			int rX,rY;
-			int[] d;
-			OrientedWallBoard wall=null;
-			
-			// add walls around the room to a set that can be accessed later
-			// we only add non-border walls
-			for(List<Integer> cell: cellSets.get(roomIndex)) {
-				for(CardinalDirection cd: CardinalDirection.values()) {
-					rX=cell.get(0);
-					rY=cell.get(1);
-					if(floorplan.hasWall(rX, rY, cd)) {
-						//check every direction for wall
-						d=cd.getDirection();
-						int[] cell1=new int[] {rX,rY}, cell2=new int[] {rX+d[0],rY+d[1]};
-						if(-1==d[0] && 0==d[1]) wall = new HorizontalWallBoard(cell2, cell1, this);
-						else if(1==d[0] && 0==d[1]) wall = new HorizontalWallBoard(cell1, cell2, this);
-						else if(0==d[0] && -1==d[1]) wall = new VerticalWallBoard(cell2, cell1, this);
-						else if(0==d[0] && 1==d[1]) wall = new VerticalWallBoard(cell1, cell2, this);
-						if(!wall.isBorder()) walls.add(wall);
-					}
-				}
-			};
 			
 			roomIndex--;
 		}
@@ -665,6 +729,10 @@ class VerticalWallBoard extends OrientedWallBoard{
 	@Override
 	Wallboard makeWall(int[] cellBack, int[] cellForth) {
 		return new Wallboard(cellBack[0],cellBack[1],cdForwardWithinRow);
+	}
+	
+	public boolean isPresent() {
+		return floorplan.hasWall(cellBack[0], cellBack[1], cdForward);
 	}
 	
 }
@@ -726,13 +794,19 @@ class HorizontalWallBoard extends OrientedWallBoard{
 		assert(cdBack==cdBackAcrossRows && cdForward==cdForwardAcrossRows);
 		
 		//a horizontal wallboard must abut two cells in the same column, i.e. same y-values
-		if(cellBack[1]!=cellForth[1]) throw new RuntimeException(String.format("VerticalWallBoard constructor: cellLeft "
+		if(cellBack[1]!=cellForth[1])
+			throw new RuntimeException(String.format("VerticalWallBoard constructor: cellLeft "
 				+ "and cellRight have different y-values: %d, %d",cellBack[1],cellForth[1]));
 		// x-values should differ by 1
-		if(1!=cellForth[0]-cellBack[0]) throw new RuntimeException(String.format("VerticalWallBoard constructor: cellLeft "
+		if(1!=cellForth[0]-cellBack[0])
+			throw new RuntimeException(String.format("VerticalWallBoard constructor: cellLeft "
 				+ "and cellRight have incompatible x-values: %d, %d",cellBack[0],cellForth[0]));
 		
 		initialize(cellBack, cellForth, builder);
+	}
+	
+	public boolean isPresent() {
+		return floorplan.hasWall(cellBack[0], cellBack[1], cdForward);
 	}
 	
 }
@@ -759,12 +833,13 @@ abstract class OrientedWallBoard{
 	static CardinalDirection cdBack, cdForward;
 	
 	private Wallboard wall; // the referent wall (wallboard)
-	private int[] cellBack; // cell to the left of the wall
-	private int[] cellForth; // cell to the right of the wall
-	private Floorplan floorplan; // floorplan in which the wall is embedded
+	protected int[] cellBack; // cell to the left of the wall
+	protected int[] cellForth; // cell to the right of the wall
+	protected Floorplan floorplan; // floorplan in which the wall is embedded
 	private MazeBuilderEller builder;
 	
 	abstract Wallboard makeWall(int[] cellBack, int[] cellForth);
+	abstract boolean isPresent();
 	
 	
 	void initialize(int[] cellBack, int[] cellForth, MazeBuilderEller builder) {
@@ -805,6 +880,16 @@ abstract class OrientedWallBoard{
 	 */
 	public boolean isBorder() {
 		return floorplan.isPartOfBorder(wall);
+	}
+	
+	/**
+	 * Test whether one of the wall's neighbors is in a room
+	 * @return boolean:{wall has room neighbor}
+	 */
+	public boolean hasRoomNeighbor() {
+		return
+			(	floorplan.isInRoom(cellBack[0], cellBack[1])  ||
+				floorplan.isInRoom(cellForth[0], cellForth[1])  );
 	}
 	
 	/**
