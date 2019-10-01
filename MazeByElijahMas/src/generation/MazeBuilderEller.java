@@ -4,67 +4,64 @@
 package generation;
 
 import java.util.ArrayList;
-import java.util.LinkedList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Queue;
 import java.util.Set;
 import java.util.stream.IntStream;
 
 /**
- * This class has the responsibility to create a maze of given dimensions (width, height) 
+ * <p>This class has the responsibility to create a maze of given dimensions (width, height) 
  * together with a solution based on a distance matrix.
  * The MazeBuilder implements Runnable such that it can be run a separate thread.
- * The MazeFactory has a MazeBuilder and handles the thread management.   
+ * The MazeFactory has a MazeBuilder and handles the thread management.</p>
  * 
- * The maze is built with Eller's algorithm. 
+ * <p>The maze is built with Eller's algorithm. 
  * Every cell begins as its own set, and sets expand by joining with other adjoining sets.
- * Ultimately every cell in the maze is merged into one all-containing set. 
+ * Ultimately every cell in the maze is merged into one all-containing set.</p>
+ * 
+ * <p>Note: some methods are defined herein that may be used in the future,
+ * but which are not currently used,; this may affect the coverage rate.</p>
+ * 
+ * <p><b>Warning</b> for whatever reasons, there is a long delay for MazeBuilderEller
+ * (few minutes? I have not timed it precisely) between the time when the MazeApplication
+ * switches to the generating screen and the time when the maze update progress counter
+ * moves off of 0% for a maze at level=F. The delay for level E is maybe 10-20 seconds
+ * on my computer.
  * 
  * @author Elijah Mas
  */
 public class MazeBuilderEller extends MazeBuilder implements Runnable {
 	
-	// tracks the sets that maze cells belong to during progression of Eller's algorithm
+	/*	----	----		FIELDS		----	----	*/
+	//--------------------------------------------------//
+	/**
+	 * tracks the sets that maze cells belong to during progression of Eller's algorithm
+	 */
 	private int[][] cells;
 	
-	/*
-	cellSets:
-	as sets of cells are created and subsequently merged, cellSets keeps track of them
-	A HashSet allows for easy lookup, but
-		Arrays.equals() works by identity, not value; so we cannot use int[]
-		>> solution: use List<Integer> instead,
-		   as advised here: https://stackoverflow.com/questions/17606839
+	/**
+	 * <p> As sets of cells are created and subsequently merged, cellSets keeps track of them.</p>
+	 * <p>A HashSet allows for easy lookup, but
+	 * Arrays.equals() works by identity, not value; so we cannot use int[]
+	 * &#62;&#62; solution: use {@code List&#60;Integer&#62;} instead,
+	 * as advised here: https://stackoverflow.com/questions/17606839
+	 * </p>
 	*/
 	private HashMap<Integer,HashSet<List<Integer>>> cellSets;
 	
-	// keeps track of boundaries around rooms
+	/**
+	 * keeps track of boundaries around rooms
+	 */
 	HashMap<Integer, ArrayList<OrientedWallBoard>> roomWalls;
 	
-	public MazeBuilderEller() {
-		super();
-		System.out.println("MazeBuilderEller uses Eller's algorithm to generate a maze.");
-	}
-	
-	public MazeBuilderEller(boolean det) {
-		super(det);
-		//System.out.println("MazeBuilderEller uses Eller's algorithm to generate a maze (deterministic enabled).");
-		
-	}
-	
 	/**
-	 * Get the cells of set values for all coordinates in the maze. Used for testing.
-	 * @return int[][] array holding set values.
+	 * Method that allows some of the more expensive in-line assertion tests
+	 * to run. Note that some tests will run regardless of the value of
+	 * this flag.
 	 */
-	protected int[][] retrieve_cells() {
-		return cells;
-	}
-	
-	protected HashMap retrieve_cellSets() {
-		return cellSets;
-	}
+	protected static boolean ENABLE_TESTS=false;
 	
 	/** 
 	 * ignoreRooms:
@@ -80,6 +77,47 @@ public class MazeBuilderEller extends MazeBuilder implements Runnable {
 	*/
 	boolean ignoreRooms = false;
 	
+	/*	----	----	CONSTRUCTORS	----	----	*/
+	//--------------------------------------------------//
+	public MazeBuilderEller() {
+		super();
+		System.out.println("MazeBuilderEller uses Eller's algorithm to generate a maze.");
+	}
+	
+	public MazeBuilderEller(boolean det) {
+		super(det);
+		//System.out.println("MazeBuilderEller uses Eller's algorithm to generate a maze (deterministic enabled).");
+		
+	}
+	
+	/*	----	----	GETTERS/SETTERS	----	----	*/
+	//--------------------------------------------------//
+	/**
+	 * Get the cells of set values for all coordinates in the maze. Used for testing.
+	 * @return int[][] array holding set values.
+	 */
+	protected int[][] retrieve_cells() {
+		return cells;
+	}
+	
+	/**
+	 * Get the HashMap that contains references to set ids (keys) and
+	 * sets of cells that belong to these set ids (values)
+	 * @return {@code HashMap<Integer,HashSet<List<Integer>>>} providing cell sets
+	 */
+	protected HashMap retrieve_cellSets() {
+		return cellSets;
+	}
+	
+	/**
+	 * Toggle ignoreRooms=true externally; only used in testing.
+	 */
+	void setToIgnoreRooms() {
+		ignoreRooms=true;
+	}
+	
+	/*	--	--	--	--	COMPUTATION METHODS	--	--	--	--	*/
+	//------------------------------------------------------//
 	/**
 	 * <p> Overrides {@link generation.MazeBuilder#generatePathways()}; generates pathways into maze
 	 * via wall removal by way of Eller's algorithm. Eller's algorithm follows these steps:
@@ -111,9 +149,16 @@ public class MazeBuilderEller extends MazeBuilder implements Runnable {
 	protected void generatePathways() {
 		initializeCells();
 		
+		// we can afford to do these once in beginning
+		assert testNoDuplicateCells();
+		assert testNoIsolatedCells();
+		assert test_cells_cellSets_Agree();
+		
 		for(int rowIndex=0; rowIndex<width; rowIndex++) {
 			// if first row, no previous row to link with
-			if(rowIndex>0)link_CurrentRow_NewRow(rowIndex-1);
+			if(rowIndex>0) {
+				link_CurrentRow_NewRow(rowIndex-1);
+			}
 			wallRemovalFromRow(rowIndex);
 		}
 		
@@ -138,14 +183,11 @@ public class MazeBuilderEller extends MazeBuilder implements Runnable {
 			}
 		}
 		
-	}
-	
-	/**
-	 * Toggle ignoreRooms=true externally;
-	 * only used in testing.
-	 */
-	void setToIgnoreRooms() {
-		ignoreRooms=true;
+		// we can also afford to do these once in end
+		assert testNoDuplicateCells();
+		assert testNoIsolatedCells();
+		assert test_cells_cellSets_Agree();
+		
 	}
 	
 	/**
@@ -189,6 +231,8 @@ public class MazeBuilderEller extends MazeBuilder implements Runnable {
 			receiver=absorbed;
 			absorbed=temp;
 		}
+		// room cells cannot be receivers by design choice
+		assert receiver>0;
 		
 		// add all absorbed cells to the receiving set
 		HashSet<List<Integer>> transferCells = cellSets.get(absorbed);
@@ -197,10 +241,15 @@ public class MazeBuilderEller extends MazeBuilder implements Runnable {
 		
 		//don't have to remove cells from absorbed set, just have to drop reference to the set
 		cellSets.remove(absorbed);
+		
+		//expensive, but for testing we will be sure this is checked as often as possible
+		if(ENABLE_TESTS) assert test_cells_cellSets_Agree();
 	}
 	
 	/**
-	 * (wrapper for {@code mergeSets(int[], int[])} which allows for input of type {@code List<Integer>})
+	 * <p>Wrapper for {@code mergeSets(int[], int[])} which allows for input of type {@code List<Integer>}</p>
+	 * 
+	 * <p>Here for potential future use; not currently used.</p>
 	 * 
 	 * @param cell1 location of one cell
 	 * @param cell2 location of other cell
@@ -241,12 +290,146 @@ public class MazeBuilderEller extends MazeBuilder implements Runnable {
 	private static HashSet<Integer> getUniqueRowValues(int[] row){
 		HashSet<Integer> a = new HashSet<Integer>();
 		for(int i: row) a.add(i); //has no effect if i is already present
+		
+		// assert no duplicate sets
+		if(ENABLE_TESTS) {
+			ArrayList<Integer> values = new ArrayList<Integer>(a);
+			for(int i=0; i<values.size()-1; i++)
+				assert(values.get(i)!=values.get(i+1));
+		}
+		
 		return a;
 	}
 	
 	/**
+	 * Test that {@code cells} and {@code cellSets}
+	 * are in agreement: that is,
+	 * the information contained in each
+	 * does not contradict the other.
+	 * 
+	 * @return true if information if the two sets contain identical information
+	 */
+	private boolean test_cells_cellSets_Agree() {
+		// verify that every value is cells
+		// agrees with the value indicated in cellSets
+		for(int setValue: cellSets.keySet()) {
+			for(List<Integer> cell: cellSets.get(setValue)) {
+				if(getCellValue(cell)!=setValue) return false;
+			}
+		}
+		
+		// verify that each set in cellSets contains the expected values
+		// as predicated by the values in cells
+		for(int x=0; x<width; x++) {
+			for(int y=0; y<height; y++) {
+				if(!cellSets.get(cells[x][y]).contains(Arrays.asList(x,y))) return false;
+			}
+		}
+		
+		return true;
+	}
+	
+	/**
+	 * <p> Test that no sets have duplicate cells.</p>
+	 * 
+	 * <p> How this works:
+	 *   <ol>
+	 *     <li> for every set of cells A,
+	 *          get the set S which contains all the sets that are not A;</li>
+	 *     <li> for every set B in A, let A = intersect(B, A);</li>
+	 *     <li> if A's size has changed over, the test has failed (somewhwhere along
+	 *          the way, a set in S had elements in common with A).</li>
+	 *   </ol>
+	 * </p>
+	 * 
+	 * <p><b>***Expected result:</b> no two sets share any cells,
+	 * meaning case 2 above holds for all comparison set pairs.</p>
+	 * 
+	 * I have optimized this method to the extent possible;
+	 * it gets expensive when called very frequently.
+	 * 
+	 * @return boolean:{no sets have duplicate cells}
+	 */
+	private boolean testNoDuplicateCells() {
+		HashSet<List<Integer>> setA;
+		
+		// don't iterate over original
+		// the .keySet() method is backed by the HashSet,
+		// do not want to chance mutating it while iterating
+		ArrayList<Integer> setValues = new ArrayList<Integer>(cellSets.keySet());
+		
+		int size=setValues.size(), v1, v2;
+		
+		/*
+		//a more expensive way of doing this
+		
+		for(int i=0; i<size-1; i++) {
+			v1=setValues.get(i);
+			for(int j=i+1; j<size; j++) {
+				v2=setValues.get(j);
+				setA = new HashSet<List<Integer>>(cellSets.get(v1));
+				setA.retainAll(cellSets.get(v2));
+				if(0!=setA.size()) return false;
+			}
+		}
+		*/
+		
+		for(int i=0; i<size; i++) {
+			v1=setValues.get(i);
+			setA = new HashSet<List<Integer>>(cellSets.get(v1));
+			int initialSize=setA.size();
+			for(int j=0; j<size; j++) {
+				if(i==j) continue;
+				setA.removeAll(cellSets.get(setValues.get(j)));
+			}
+			int newSize=setA.size();
+			if(initialSize!=newSize) return false;
+		}
+		
+		return true;
+	}
+	
+	/**
+	 * <p>Verify that there are no isolated cells: i.e.,
+	 * every cell that is part of a set can be reached
+	 * from every other cell in that set.</p>
+	 * 
+	 * <p>It is sufficient to choose one cell at random
+	 * and then walk to its reachable neighbors
+	 * in the set; if any cells are disconnected, this test fails.</p>
+	 * 
+	 * @return boolean: true if the specified test is successful
+	 */
+	private boolean testNoIsolatedCells() {
+		for(int setValue:cellSets.keySet()) {
+			
+			// get a random cell in this set,
+			// walk to every other cell in its set that can be reached,
+			// put into a new set
+			HashSet<List<Integer>> cells = getCellsInRoom(
+				(List<Integer>) getArbitraryValueFromSet(cellSets.get(setValue))
+			);
+			
+			// get all the cells in the maze that identify this set value
+			HashSet<List<Integer>> cells2 = new HashSet<List<Integer>>(cells.size());
+			for(int x=0; x<width; x++) {
+				for(int y=0; y<height; y++) {
+					if(setValue==getCellValue(new int[] {x,y})) cells2.add(Arrays.asList(x,y));
+				}
+			}
+			
+			// now check that both sets are equal
+			// as per docs, .equals method tests for equality, not identity
+			// https://docs.oracle.com/javase/8/docs/api/java/util/AbstractList.html#equals-java.lang.Object-
+			if(!cells.equals(cells2)) return false;
+		}
+		return true;
+	}
+	
+	/**
 	 * Return all the wallboards (as VerticalWallBoard instances)
-	 * positioned between the cells of a row, i.e. excluding the border cells.
+	 * positioned between the cells of a row, i.e. excluding the borders
+	 * on the maze periphery.
 	 * 
 	 * @param rowIndex index of the row
 	 * @return list of vertical wallboards in cell row
@@ -262,6 +445,15 @@ public class MazeBuilderEller extends MazeBuilder implements Runnable {
 		return boards;
 	}
 	
+	/**
+	 * Attempt to remove a wallboard from the floorplan, whether probabilistically
+	 * or enforced.
+	 * 
+	 * @param wall the OrientedWallBoard instance to be removed
+	 * @param considerBorder if true, borders will not be removed
+	 * @param forceRemoval if true, remove the wall if it is between cells of different sets;
+	 *                     if false, the wall may or may not be removed
+	 */
 	private void attemptWallboardRemoval(OrientedWallBoard wall, boolean considerBorder, boolean forceRemoval) {
 		/* the decision process for removing the wall:
 		 *     if forceRemoval, the wall will be removed if its surrounding cell-sets are distinct
@@ -344,16 +536,17 @@ public class MazeBuilderEller extends MazeBuilder implements Runnable {
 			// for this we have the test below outside this loop
 		}
 		
-		// assert that there are no isolated cells: i.e.,
-		// every cell that is part of a set can be reached from every other cell in the set
-		// it is sufficient to choose one cell at random and then walk to its reachable neighbors
-		// in the set; if any cells are disconnected, this test fails
-		for(int setValue:cellSets.keySet())
-				assert getCellsInRoom(
-						(List<Integer>) getArbitraryValueFromSet(cellSets.get(setValue))
-					).size()==countSetOccurrence(setValue);
+		
+		if(ENABLE_TESTS) {
+			//System.out.println("performing duplicate test at row "+rowIndex);
+			assert testNoIsolatedCells();
+			assert testNoDuplicateCells();
+		}
 	}
 	
+	/*
+	
+	//not currently used
 	private int countSetOccurrence(int setValue) {
 		int count=0;
 		for(int[] row: cells) {
@@ -363,6 +556,7 @@ public class MazeBuilderEller extends MazeBuilder implements Runnable {
 		}
 		return count;
 	}
+	*/
 	
 	/**
 	 * Set the value of a given cell as the set to which it should belong;
@@ -387,7 +581,7 @@ public class MazeBuilderEller extends MazeBuilder implements Runnable {
 	}
 		
 	/**
-	 * (wrapper for {@code addValueAtCell(List<Integer>)}, allows for input of type {@code int[]})
+	 * Wrapper for {@code addValueAtCell(List<Integer>)}, allows for input of type {@code int[]}.
 	 * 
 	 * @param cell array containing {x,y}
 	 * @param setValue the set to which the cell belongs
@@ -449,7 +643,14 @@ public class MazeBuilderEller extends MazeBuilder implements Runnable {
 				attemptWallboardRemoval(wall, false, true);
 				
 				extendable.remove(cell);
+				
 			}
+		}
+		
+		if(ENABLE_TESTS) {
+			//System.out.println("performing duplicate test at row "+currentRowIndex);
+			assert testNoDuplicateCells();
+			assert testNoIsolatedCells();
 		}
 	}
 

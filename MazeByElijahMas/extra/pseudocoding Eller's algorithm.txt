@@ -1,3 +1,5 @@
+NOTE: this file contains my original pseudocode for implementing Eller's algorithm. Details of the implementation changed along the way, as I discovered optimizations or corner cases that I had not considered before. Keeping this here for reference--I can see what my original plan did not account for.
+
 ----	----	----	----
 Steps from http://weblog.jamisbuck.org/2010/12/29/maze-generation-eller-s-algorithm.html:
 
@@ -51,10 +53,10 @@ perform wallRemovalFromRow(currentRow)
 
 *** S3-5 ***
 while true:
-	newRow=row after currentRow
-	if newRow is last row: break
-	startVal=max value in currentRow
-	set values of newRow to range(startVal,startVal+newRow.length())
+	//newRow=row after currentRow
+	//if newRow is last row: break
+	//startVal=max value in currentRow
+	//set values of newRow to range(startVal,startVal+newRow.length())
 	for each set overlapping the currentRow:
 		extendable={cells in currentRow belonging to this set}
 		not_extendable={}

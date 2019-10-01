@@ -7,23 +7,19 @@ import org.junit.jupiter.params.provider.ValueSource;
 import java.util.ArrayList;
 import java.util.Arrays;
 
-//import org.junit.Test;
-//import org.junit.Before;
-
 import gui.Controller;
 import generation.Order;
-//import generation.Order.Builder;
 import generation.OrderStub;
 
 
 /**
  * 
- * MazeFactoryTest tests the validity of a maze.
+ * <p>MazeFactoryTest tests the validity of a maze.
  * The black-box nature of the testing means that only the end state of the
- * maze is subject to testing; intermediary details are unknown.
+ * maze is subject to testing; intermediary details are unknown.</p>
  * 
- * JUnit {@code params} ({@code org.junit.jupiter.params}) is used
- * to automate application of test cases to mazes of variable difficulty levels.
+ * <p>JUnit {@code params} ({@code org.junit.jupiter.params}) is used
+ * to automate application of test cases to mazes of variable difficulty levels.</p>
  * 
  * @author Elijah Mas
  *
@@ -38,7 +34,15 @@ public class MazeFactoryTest {
 	 */
 	Maze imperfectMaze;
 	
+	/**
+	 * dimensions of the mazes
+	 */
 	int width, height;
+	
+	/**
+	 * used to test the setting of SingleRandom's seed.
+	 */
+	static int mazeSeedTestValue=0;
 	
 	/**
 	 * <p>Create a perfect maze and an imperfect maze to subject to the different test methods;
@@ -69,9 +73,52 @@ public class MazeFactoryTest {
 	}
 	
 	/**
-	 * Establishes perfect/imperfect mazes and runs all the tests specified in {@link #allTests()}.
+	 * <p>This method might be considered a stand-in "main" method for this class.
+	 * It automates the execution of other methods that contain assert* statements
+	 * but are not marked with the &#64;{@code Test} annotation; the reason for doing this is
+	 * that this method uses the &#64;{@code ParameterizedTest} annotation, which allows
+	 * all the other methods to be run with variable input arguments,
+	 * which the plain &#64;{@code Test} annotation does not permit.
+	 * The parameter values (&#64;{@code ValueSource}) are a series of integers that represent
+	 * the different difficulty levels of puzzles involved that will be tested.</p>
 	 * 
-	 * @param level the level for the mazes to be established
+	 * <p><b>Call hierarchy</b><br> The following tests are performed:
+	 * <ul>
+	 *    <li> {@link #allTests()}
+	 *       <ul>
+	 *       <li> {@link #baselineTests()}
+	 *          <ul>
+	 *          <li> {@link #testNoRoomsInPerfectMaze()}: test that a perfect maze has no rooms.</li>
+	 *          <li> {@link #testOneExitByBorders()}: test that a maze has only one missing border around the periphery.</li>
+	 *          <li> {@link #testExitAtExpectedLocation()}: test that the exit location identified
+	 *               by a maze matches that which is detected by examining other maze properties.</li>
+	 *          <li> {@link #testOneExitByDistance()}: test that only one maze cell has a distance of 1 to the exit.</li>
+	 *          <li> {@link #testMaxDistanceStartingPoint()}: test that the starting point has the maximal distance
+	 *               to the exit of all cells in the maze.</li>
+	 *          <li> {@link #testEveryCellHasExit()} test that every cell has neighbors at distance=1 away and
+	 *               with no floorboards in between, which allows us to conclude that every cell in the maze
+	 *               can access the exit.</li>
+	 *          </ul>
+	 *       <li> {@link #deterministicTest(boolean) deterministicTest} ensure that the seed of the
+	 *            random number generator is the same before each deterministic maze order. </li>
+	 *       </ul>
+	 *    </li>
+	 * </ul>
+	 * </p>
+	 * <br>
+	 * <p>Each one of these tests
+	 * is run at the specified difficulty levels (currently 0-8);
+	 * at each difficulty level we run all the above tests
+	 * (save for {@link #testNoRoomsInPerfectMaze()}) for two cases:
+	 * <ol>
+	 *    <li> a perfect maze </li>
+	 *    <li> an imperfect maze</li>
+	 * </ol>
+	 * 
+	 * As implied by the name, {@link #testNoRoomsInPerfectMaze()} is run only for a perfect maze.
+	 * </p>
+	 *  
+	 * @param level the difficulty level of the maze
 	 */
 	@ParameterizedTest
 	@ValueSource(ints = {0,1,2,3,4,5,6,7,8})
@@ -83,8 +130,23 @@ public class MazeFactoryTest {
 	}
 	
 	/**
+	 * When deterministic maze generation is requested,
+	 * this method asserts that the seed value of the random generator
+	 * matches the expected value.
+	 * @param deterministic whether the deterministic order has been placed
+	 */
+	public void deterministicTest(boolean deterministic) {
+		if(deterministic) {
+			// make no assumptions about what the value will be; store it
+			if(0==MazeFactoryTest.mazeSeedTestValue) MazeFactoryTest.mazeSeedTestValue=SingleRandom.getRandom().nextInt();
+			// now that we know what the value is, compare
+			else assertEquals(SingleRandom.getRandom().nextInt(),MazeFactoryTest.mazeSeedTestValue);
+		}
+	}
+	
+	/**
 	 * For MazeFactoryTest, {@code allTests()} runs only {@link #baselineTests()}.
-	 * In subclasses, this can be overriden to introduce new tests.
+	 * In subclasses, this can be overrode to introduce new tests.
 	 */
 	public void allTests() {
 		baselineTests();
@@ -262,6 +324,9 @@ public class MazeFactoryTest {
 	 * This method returns {@code false} immediately if an erroneous cell is found.
 	 * (Though this option should be unreachable, as the maze generation process short-circuits
 	 * by failing to calculate distances in the event that a maze has closed rooms).
+	 * 
+	 * @param maze a maze created by a {@link generation.MazeBuilder} instance
+	 * @return boolean for whether the test is successful
 	 */
 	protected boolean _testAllCellsConnected(Maze maze) {
 		int[] dx_dy;
@@ -394,7 +459,7 @@ public class MazeFactoryTest {
 	 * 
 	 * <b>***Expected result:</b> return true, no cells in rooms.
 	 * 
-	 * @return
+	 * @return boolean for whether the test is successful
 	 */
 	public boolean _testNoRoomsInPerfectMaze() {
 		Floorplan floorplan = perfectMaze.getFloorplan();
@@ -432,6 +497,7 @@ public class MazeFactoryTest {
 		order.start(controller, null);
 		
 		MazeBuilder builder = new MazeBuilder(deterministic);
+		deterministicTest(deterministic);
 		builder.buildOrder(order);
 		Thread buildThread = new Thread(builder);
 		buildThread.start();

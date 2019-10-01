@@ -39,7 +39,9 @@ public class MazeBuilder implements Runnable {
 	static final int MAX_TRIES = 250 ; // room generation: max number of tries to find a random location for a room
 	static final int MIN_ROOM_DIMENSION = 3; // room generation: min dimension
 	static final int MAX_ROOM_DIMENSION = 8; // room generation: max dimension
-
+	
+	static final int MAZE_SEED = 7;
+	
 	/**
 	 * Constructor for a randomized maze generation
 	 */
@@ -52,12 +54,12 @@ public class MazeBuilder implements Runnable {
 	public MazeBuilder(boolean deterministic){
 		if (true == deterministic)
 		{
-			SingleRandom.setSeed(7);
+			SingleRandom.setSeed(MAZE_SEED);
 			//System.out.println("deterministic maze building");
 		}
 		random = SingleRandom.getRandom();
 	}
-
+	
 	/**
 	 * Sets internal fields according to given order
 	 * @param order
