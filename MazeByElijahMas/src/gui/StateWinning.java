@@ -50,6 +50,7 @@ public class StateWinning extends DefaultState {
         this.panel = panel;
         // init mazeview, controller not needed for final screen
         view = new SimpleScreens(null);
+        view.setController(controller);
 
         if (panel == null) {
     		System.out.println("StateWinning.start: warning: no panel, dry-run game without graphics!");

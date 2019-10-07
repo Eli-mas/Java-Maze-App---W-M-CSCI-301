@@ -47,7 +47,7 @@ public class BasicRobot implements Robot {
 	@Override
 	public float getBatteryLevel() {
 		// TODO Auto-generated method stub
-		return 0;
+		return batteryLevel;
 	}
 
 	@Override

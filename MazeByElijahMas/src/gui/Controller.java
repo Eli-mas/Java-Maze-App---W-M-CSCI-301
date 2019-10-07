@@ -78,6 +78,17 @@ public class Controller {
 	 */
 	boolean perfect;
 	
+	//// Extension in preparation for Project 3: robot and robot driver //////
+	/**
+	 * The robot that interacts with the controller starting from P3
+	 */
+	Robot robot;
+	/**
+	 * The driver that interacts with the robot starting from P3
+	 */
+	RobotDriver driver;
+	float initialRobotEnergyLevel;
+	
 	public Controller() {
 		states = new State[4];
 		states[0] = new StateTitle();
@@ -158,6 +169,8 @@ public class Controller {
 		
 		robot = new BasicRobot();
 		robot.setMaze(this);
+		initialRobotEnergyLevel=robot.getBatteryLevel();
+		System.out.println("initialRobotEnergyLevel="+initialRobotEnergyLevel);
 		setRobotAndDriver(robot,null);
 		currentState.start(this, panel);
 	}
@@ -197,16 +210,6 @@ public class Controller {
 		panel = null;
 	}
 	
-	//// Extension in preparation for Project 3: robot and robot driver //////
-	/**
-	 * The robot that interacts with the controller starting from P3
-	 */
-	Robot robot;
-	/**
-	 * The driver that interacts with the robot starting from P3
-	 */
-	RobotDriver driver;
-	
 	/**
 	 * Sets the robot and robot driver
 	 * @param robot
@@ -217,18 +220,31 @@ public class Controller {
 		driver = robotdriver;
 		
 	}
+	
 	/**
 	 * @return the robot, may be null
 	 */
 	public Robot getRobot() {
 		return robot;
 	}
+	
 	/**
 	 * @return the driver, may be null
 	 */
 	public RobotDriver getDriver() {
 		return driver;
 	}
+	
+	public float getEnergyConsumedByRobotAtPresent() {
+		return initialRobotEnergyLevel-robot.getBatteryLevel();
+	}
+	
+	public float getInitialRobotEnergyLevel() {
+		return initialRobotEnergyLevel;
+	}
+	
+	
+	
 	/**
 	 * Provides access to the maze configuration. 
 	 * This is needed for a robot to be able to recognize walls
