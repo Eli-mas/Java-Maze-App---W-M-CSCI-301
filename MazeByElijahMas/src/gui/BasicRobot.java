@@ -22,8 +22,13 @@ public class BasicRobot implements Robot {
 	private boolean roomSensorIsPresent;
 	boolean initialized;
 	
-	public BasicRobot() {
-		new Instantiator(this).start();
+	public BasicRobot() {}
+
+	@Override
+	public void setMaze(Controller controller) {
+		control=controller;
+		instantiateFields();
+		System.out.println("robot has set controller");
 	}
 	
 	
@@ -37,12 +42,6 @@ public class BasicRobot implements Robot {
 	public CardinalDirection getCurrentDirection() {
 		// TODO Auto-generated method stub
 		return null;
-	}
-
-	@Override
-	public void setMaze(Controller controller) {
-		control=controller;
-		System.out.println("robot has set controller");
 	}
 
 	@Override
@@ -192,44 +191,3 @@ public class BasicRobot implements Robot {
 
 }
 
-class Instantiator implements Runnable {
-	BasicRobot robot;
-	private Thread thread;
-	private Controller control;
-	
-	Instantiator(BasicRobot robot){
-		this.robot=robot;
-		control=robot.getController();
-	}
-	
-	public void run() {
-		try {
-			while(null==control) {
-				System.out.println("the controller is not initialized");
-				control=robot.getController();
-				Thread.sleep(1000);
-			}
-			while(null==control.currentState) {
-				System.out.println("the controller's state is not initialized");
-				Thread.sleep(1000);
-			}
-			//while(controller is ready for playing state)
-			while(!(control.currentState instanceof StatePlaying)) {
-				//if(controller is ready for playing state)
-				System.out.println("the controller is not in a playing state");
-				Thread.sleep(1000);
-			}
-			robot.instantiateFields();
-			System.out.println("the robot is instantiated in the run method");
-		} catch (InterruptedException e) {
-			System.out.println("the instantiator was interrupted");
-		}
-	}
-	
-	public void start() {
-		if(null==thread) {
-			thread = new Thread(this);
-			thread.start();
-		}
-	}
-}
