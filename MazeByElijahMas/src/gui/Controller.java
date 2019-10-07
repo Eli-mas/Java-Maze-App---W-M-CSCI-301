@@ -104,14 +104,26 @@ public class Controller {
         return panel;
     }
     /**
-     * Starts the controller and begins the game 
-     * with the title screen.
+     * <p> Starts the controller and begins the game 
+     * with the title screen. </p>
+     * 
+     * <p> new for P3: also instantiates a robot and establishes
+     * data flow channels between robot and this controller instance.</p>
      */
     public void start() { 
-        currentState = states[0]; // initial state is the title state
+        System.out.println("controller has started");
+    	currentState = states[0]; // initial state is the title state
         currentState.setFileName(fileName); // can be null
         currentState.start(this, panel);
         fileName = null; // reset after use
+        System.out.println("Controller: initializing the robot");
+        
+        
+        Robot robot = new BasicRobot();
+        System.out.println("Controller: calling robot.setMaze");
+        robot.setMaze(this);
+        setRobotAndDriver(robot,null);
+        
     }
     /**
      * Switches the controller to the generating screen.
@@ -146,6 +158,7 @@ public class Controller {
     public void switchFromGeneratingToPlaying(Maze config) {
         currentState = states[2];
         currentState.setMazeConfiguration(config);
+        //robot.
         currentState.start(this, panel);
     }
     /**
