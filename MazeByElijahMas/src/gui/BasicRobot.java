@@ -22,6 +22,11 @@ public class BasicRobot implements Robot {
 	private boolean roomSensorIsPresent;
 	boolean initialized;
 	
+	final static float energyUsedForJump=-50;
+	final static float energyUsedForMove=-5;
+	final static float energyUsedForRotation=-3;
+	final static float energyUsedForDistanceSensing=-1;
+	
 	public BasicRobot() {}
 
 	@Override
@@ -46,38 +51,32 @@ public class BasicRobot implements Robot {
 
 	@Override
 	public float getBatteryLevel() {
-		// TODO Auto-generated method stub
 		return batteryLevel;
 	}
 
 	@Override
 	public void setBatteryLevel(float level) {
-		// TODO Auto-generated method stub
-
+		batteryLevel=level;
 	}
 
 	@Override
 	public int getOdometerReading() {
-		// TODO Auto-generated method stub
-		return 0;
+		return odometerReading;
 	}
 
 	@Override
 	public void resetOdometer() {
-		// TODO Auto-generated method stub
-
+		odometerReading=0;
 	}
 
 	@Override
 	public float getEnergyForFullRotation() {
-		// TODO Auto-generated method stub
-		return 0;
+		return 12f;
 	}
 
 	@Override
 	public float getEnergyForStepForward() {
-		// TODO Auto-generated method stub
-		return 0;
+		return 5f;
 	}
 
 	@Override
@@ -142,8 +141,8 @@ public class BasicRobot implements Robot {
 
 	@Override
 	public void move(int distance, boolean manual) {
-		// TODO Auto-generated method stub
-
+		// TODO change position, account for crash
+		changeEnergyLevel(energyUsedForMove);
 	}
 
 	@Override
@@ -159,7 +158,9 @@ public class BasicRobot implements Robot {
 	
 	
 	
-	
+	private void changeEnergyLevel(float amount) {
+		setBatteryLevel(getBatteryLevel()+amount);
+	}
 	
 	private boolean hasDirectionalSensor(Direction direction) {
 		return sensorFunctionalFlags.containsKey(direction);

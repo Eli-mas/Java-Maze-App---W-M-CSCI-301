@@ -87,6 +87,13 @@ public class Controller {
 	 * The driver that interacts with the robot starting from P3
 	 */
 	RobotDriver driver;
+	/**
+	 * Whether or not the robot is operated manually
+	 */
+	boolean manualRobotOperation=false;
+	/**
+	 * Starting energy level of the robot, used to measure energy consumption
+	 */
 	float initialRobotEnergyLevel;
 	
 	public Controller() {
