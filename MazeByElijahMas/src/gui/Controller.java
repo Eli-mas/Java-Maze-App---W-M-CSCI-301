@@ -173,13 +173,23 @@ public class Controller {
 		currentState.setMazeConfiguration(config);
 		System.out.println("Controller: calling robot.setMaze");
 		
-		
-		robot = new BasicRobot();
+		Robot new_robot = new BasicRobot();
+		setRobotAndDriver(new_robot,null);
+		//setRobot()
+		// can't do this here--
+		// StatePlaying has not initialized the current position/direction
+		currentState.start(this, panel);
+	}
+	
+	/**
+	 * Sets the robot up. Called in StatePlaying when
+	 * current position and direction have been initialized.
+	 */
+	protected void setupRobot() {
 		robot.setMaze(this);
 		initialRobotEnergyLevel=robot.getBatteryLevel();
 		System.out.println("initialRobotEnergyLevel="+initialRobotEnergyLevel);
-		setRobotAndDriver(robot,null);
-		currentState.start(this, panel);
+		
 	}
 	
 	/**

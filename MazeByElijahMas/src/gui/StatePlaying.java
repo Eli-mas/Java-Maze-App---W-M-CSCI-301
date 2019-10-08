@@ -5,6 +5,8 @@ import gui.Constants.UserInput;
 import java.awt.Color;
 import java.awt.FontMetrics;
 import java.awt.Graphics;
+import java.util.Arrays;
+import java.util.stream.IntStream;
 
 import generation.CardinalDirection;
 import generation.Floorplan;
@@ -105,7 +107,9 @@ public class StatePlaying extends DefaultState {
 		// set the current position and direction consistently with the viewing direction
 		setPositionDirectionViewingDirection();
 		walkStep = 0; // counts incremental steps during move/rotate operation
-	
+		
+		
+		controller.setupRobot();
 		if (panel != null) {
 			startDrawer();
 		}
@@ -225,6 +229,65 @@ public class StatePlaying extends DefaultState {
 		} // end of internal switch statement for playing state
 		return true;
 	}
+	
+	private void drawRobotMetrics(boolean performRedraw) {
+		// follow the template used in SimpleScreens methods
+		Graphics g = panel.getBufferGraphics() ;
+		FontMetrics fm=g.getFontMetrics();
+		g.setColor(Color.orange);
+		
+		// print battery level & location
+		try {
+			Object[] distances = (Arrays
+					.asList(BasicRobot.ForwardRightBackwardLeft)
+					.stream()
+					.map(d -> robot.distanceToObstacle(d))
+					.toArray());
+			
+			g.drawString(
+				String.format(
+					"battery: %d, loc: %s, cd: %s, dist: %s",//+str
+					(int)robot.getBatteryLevel(),
+					Arrays.toString(robot.getCurrentPosition()),
+					robot.getCurrentDirection(),
+					Arrays.deepToString(distances)
+				),
+				Constants.BATTERY_INDICATOR_X,
+				Constants.BATTERY_INDICATOR_Y
+			);
+			
+			String str="";
+			for(Direction d: Direction.values()) {
+				if(robot.canSeeThroughTheExitIntoEternity(d)){
+					str+="looking out";
+					System.out.println("StatePlaying.draw: looking out");
+					break;
+				}
+			}
+			if(robot.isAtExit()) {
+				str+=" at exit";
+				System.out.println("StatePlaying.draw: at exit");
+			}
+			
+			if(str.length()>0) {
+				g.setColor(Color.cyan);
+				g.drawString(
+					str,
+					Constants.BATTERY_INDICATOR_X,
+					2*Constants.BATTERY_INDICATOR_Y
+				);
+			}
+				
+		} catch (Exception e) {
+			System.out.println("! ! ! StatePlaying: cannot update robot position ! ! !");
+			//e.printStackTrace();
+		}
+		
+		// update has to be called manually after walk
+		// because setPosition is called after screen redraw
+		if(performRedraw) draw();
+	}
+	
 	/**
 	 * Draws the current content on panel to show it on screen.
 	 */
@@ -240,16 +303,7 @@ public class StatePlaying extends DefaultState {
 					isInShowMazeMode(),isInShowSolutionMode()) ;
 		}
 		
-		Graphics g = panel.getBufferGraphics() ;
-		FontMetrics fm=g.getFontMetrics();
-		g.setColor(Color.orange);
-		//g.drawString(str, (Constants.VIEW_WIDTH-fm.stringWidth(str))/2, ypos);
-		g.drawString(
-			String.format("battery: %d",(int)robot.getBatteryLevel()),
-			Constants.BATTERY_INDICATOR_X,
-			Constants.BATTERY_INDICATOR_Y
-		);
-		
+		drawRobotMetrics(false);
 		
 		// update the screen with the buffer graphics
 		panel.update() ;
@@ -375,7 +429,9 @@ public class StatePlaying extends DefaultState {
 		// because choice of direction values are more limited.
 		setDirectionToMatchCurrentAngle();
 		
-		//robot.rotate(dir);
+		if(1==dir) robot.rotate(Turn.LEFT);
+		else if(-1==dir) robot.rotate(Turn.RIGHT);
+		drawRobotMetrics(true);
 		
 		//logPosition(); // debugging
 	}
@@ -400,9 +456,11 @@ public class StatePlaying extends DefaultState {
 		}
 		setCurrentPosition(px + dir*dx, py + dir*dy) ;
 		walkStep = 0; // reset counter for next time
+		robot.move(dir, control.manualRobotOperation);
 		
 		// move the robot
-		robot.move(dir, control.manualRobotOperation);
+		
+		drawRobotMetrics(true);
 		
 		//logPosition(); // debugging
 	}
