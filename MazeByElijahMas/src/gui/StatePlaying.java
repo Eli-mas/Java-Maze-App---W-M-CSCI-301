@@ -1,6 +1,11 @@
 package gui;
 
 import gui.Constants.UserInput;
+
+import java.awt.Color;
+import java.awt.FontMetrics;
+import java.awt.Graphics;
+
 import generation.CardinalDirection;
 import generation.Floorplan;
 import generation.Maze;
@@ -188,6 +193,8 @@ public class StatePlaying extends DefaultState {
 			// go to position if within maze
 			if (mazeConfig.isValidPosition(px + dx, py + dy)) {
 				setCurrentPosition(px + dx, py + dy) ;
+				//if(robot senses distance in front to wall is > 1) walk, don't jump;
+				//else jump;
 				draw() ;
 			}
 			break;
@@ -232,6 +239,18 @@ public class StatePlaying extends DefaultState {
 			mapView.draw(panel, px, py, angle, walkStep,
 					isInShowMazeMode(),isInShowSolutionMode()) ;
 		}
+		
+		Graphics g = panel.getBufferGraphics() ;
+		FontMetrics fm=g.getFontMetrics();
+		g.setColor(Color.orange);
+		//g.drawString(str, (Constants.VIEW_WIDTH-fm.stringWidth(str))/2, ypos);
+		g.drawString(
+			String.format("battery: %d",(int)robot.getBatteryLevel()),
+			Constants.BATTERY_INDICATOR_X,
+			Constants.BATTERY_INDICATOR_Y
+		);
+		
+		
 		// update the screen with the buffer graphics
 		panel.update() ;
 	}

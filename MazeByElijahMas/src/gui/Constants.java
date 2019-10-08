@@ -24,6 +24,10 @@ public class Constants {
 	public static int[] SKILL_PARTCT = { 60, 600, 900, 1200, 2100, 2700, 3300,
 	5000, 6000, 13500, 19800, 25000, 29000, 45000, 85000, 85000*4 };
 	
+	// on-screen location to print battery level during playing state
+	public static final int BATTERY_INDICATOR_X=(int)(VIEW_WIDTH*.05);
+	public static final int BATTERY_INDICATOR_Y=(int)(VIEW_HEIGHT*.05);
+	
 	// Possible states of the GUI
 	// these are states of an automaton that the graphical user interface implements
 	public enum StateGUI { STATE_TITLE, STATE_GENERATING, STATE_PLAY, STATE_FINISH; }

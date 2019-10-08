@@ -111,32 +111,37 @@ public class BasicRobot implements Robot {
 
 	@Override
 	public int distanceToObstacle(Direction direction) throws UnsupportedOperationException {
-		// TODO Auto-generated method stub
+		// TODO use getObstacleDistance; and introduce optimization that we do not have
+		// to sense direction repeatedly if we keep track of movement forwards and backwards
+		// but we always have to sense direction sideways when moving forwards or backwards
+		// rotating in spot, we can just switch the distances across directions
 		return 0;
 	}
 
 	@Override
 	public boolean hasOperationalSensor(Direction direction) {
-		// TODO Auto-generated method stub
-		return false;
+		// if the first term is not true, this short-circuits
+		// so the second term cannot inject null into the boolean comparison
+		return (hasDirectionalSensor(direction) && sensorFunctionalFlags.get(direction));
 	}
 
 	@Override
 	public void triggerSensorFailure(Direction direction) {
-		// TODO Auto-generated method stub
-
+		if(hasDirectionalSensor(direction))
+			sensorFunctionalFlags.put(direction,false);
 	}
 
 	@Override
 	public boolean repairFailedSensor(Direction direction) {
-		// TODO Auto-generated method stub
-		return false;
+		if(!hasDirectionalSensor(direction)) return false;
+		sensorFunctionalFlags.put(direction,true);
+		return true;
 	}
 
 	@Override
 	public void rotate(Turn turn) {
-		// TODO Auto-generated method stub
-
+		// TODO change direction
+		changeEnergyLevel(energyUsedForRotation);
 	}
 
 	@Override
@@ -147,8 +152,8 @@ public class BasicRobot implements Robot {
 
 	@Override
 	public void jump() throws Exception {
-		// TODO Auto-generated method stub
-
+		// TODO change position
+		changeEnergyLevel(energyUsedForJump);
 	}
 	
 	
