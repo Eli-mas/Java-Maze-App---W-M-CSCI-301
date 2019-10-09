@@ -21,10 +21,15 @@ public class SimpleKeyListener implements KeyListener {
 
 	private Container parent ;
 	private Controller controller ;
+	private Robot robot;
+	private boolean robotEnabled;
 	
 	SimpleKeyListener(Container parent, Controller controller){
 		this.parent = parent;
 		this.controller = controller;
+		robot = controller.getRobot();
+		robotEnabled = MazeApplication.getRobotEnabled();
+		System.out.println("Key listener: robot enabled: "+robotEnabled);
 	}
 	/**
 	 * Translate keyboard input to the corresponding operation for 
@@ -132,7 +137,10 @@ public class SimpleKeyListener implements KeyListener {
 		// uikey encodes what action should be triggered
 		// value is only used if uikey == Start
 		// value indicates the user selected size of the maze
-		controller.keyDown(uikey, value);
+		if(robotEnabled && (controller.currentState instanceof StatePlaying))
+			controller.keyDownRobot(uikey, value);
+		else
+			controller.keyDown(uikey, value);
 		parent.repaint() ;
 	}
 	@Override

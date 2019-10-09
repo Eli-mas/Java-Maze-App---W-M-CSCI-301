@@ -24,6 +24,12 @@ public class MazeApplication extends JFrame {
 
 	// not used, just to make the compiler, static code checker happy
 	private static final long serialVersionUID = 1L;
+	
+	private static boolean robotEnabled=true;
+	
+	public static boolean getRobotEnabled() {
+		return robotEnabled;
+	}
 
 	/**
 	 * Constructor
@@ -50,7 +56,7 @@ public class MazeApplication extends JFrame {
 	 */
 	 Controller createController(String parameter) {
 	    // need to instantiate a controller to return as a result in any case
-	    Controller result = new Controller() ;
+	    Controller result = new Controller(robotEnabled) ;
 	    String msg = null; // message for feedback
 	    // Case 1: no input
 	    if (parameter == null) {
@@ -132,11 +138,12 @@ public class MazeApplication extends JFrame {
 	public static void main(String[] args) {
 	    JFrame app ; 
 		switch (args.length) {
-		case 1 : app = new MazeApplication(args[0]);
-		break ;
-		case 0 : 
-		default : app = new MazeApplication() ;
-		break ;
+			case 1 :
+				app = new MazeApplication(args[0]);
+				break ;
+			case 0 : default :
+				app = new MazeApplication() ;
+				break ;
 		}
 		app.repaint() ;
 	}

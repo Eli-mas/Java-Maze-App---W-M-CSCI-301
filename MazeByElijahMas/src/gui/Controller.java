@@ -1,6 +1,7 @@
 package gui;
 
 import gui.Constants.UserInput;
+import gui.Robot.Turn;
 import generation.CardinalDirection;
 import generation.Maze;
 import generation.Order;
@@ -83,6 +84,7 @@ public class Controller {
 	 * The robot that interacts with the controller starting from P3
 	 */
 	Robot robot;
+	boolean robotEnabled;
 	/**
 	 * The driver that interacts with the robot starting from P3
 	 */
@@ -97,6 +99,14 @@ public class Controller {
 	float initialRobotEnergyLevel;
 	
 	public Controller() {
+		init(false);
+	}
+	
+	public Controller(boolean enableRobot) {
+		init(enableRobot);
+	}
+	
+	private void init(boolean enableRobot) {
 		states = new State[4];
 		states[0] = new StateTitle();
 		states[1] = new StateGenerating();
@@ -107,6 +117,7 @@ public class Controller {
 		fileName = null;
 		builder = Order.Builder.DFS; // default
 		perfect = false; // default
+		robotEnabled = enableRobot? true: false;
 	}
 	
 	public void setFileName(String fileName) {
@@ -131,7 +142,6 @@ public class Controller {
 		currentState.setFileName(fileName); // can be null
 		currentState.start(this, panel);
 		fileName = null; // reset after use
-		System.out.println("Controller: initializing the robot");
 	 }
 	   
 	/**
@@ -173,11 +183,15 @@ public class Controller {
 		currentState.setMazeConfiguration(config);
 		System.out.println("Controller: calling robot.setMaze");
 		
-		Robot new_robot = new BasicRobot();
-		setRobotAndDriver(new_robot,null);
-		//setRobot()
-		// can't do this here--
-		// StatePlaying has not initialized the current position/direction
+		
+		if(robotEnabled){
+			System.out.println("Controller: initializing the robot");
+			Robot new_robot = new BasicRobot();
+			setRobotAndDriver(new_robot,null);
+			//setupRobot()
+			// can't do this here--
+			// StatePlaying has not initialized the current position/direction
+		}
 		currentState.start(this, panel);
 	}
 	
@@ -189,7 +203,6 @@ public class Controller {
 		robot.setMaze(this);
 		initialRobotEnergyLevel=robot.getBatteryLevel();
 		System.out.println("initialRobotEnergyLevel="+initialRobotEnergyLevel);
-		
 	}
 	
 	/**
@@ -211,12 +224,45 @@ public class Controller {
 	}
 	
 	/**
-	 * Method incorporates all reactions to keyboard input in original code. 
-	 * The simple key listener calls this method to communicate input.
+	 * <p>Method incorporates all reactions to keyboard input in original code. 
+	 * The simple key listener calls this method to communicate input.</p>
+	 * 
+	 * <p>New for P3:
+	 * If a robot is established and the currentState is StatePlaying,
+	 * commands that involve operating the robot
+	 * are delegated to the robot itself, and the Down key is ignored;
+	 * keys that affect the graphical interface are handled normally</p>
 	 */
 	public boolean keyDown(UserInput key, int value) {
 		// delegated to state object
 		return currentState.keyDown(key, value);
+	}
+	
+	public boolean keyDownRobot(UserInput key, int value) {
+		switch(key) {
+			case Left:
+				robot.rotate(Turn.LEFT);
+				break;
+			case Right:
+				robot.rotate(Turn.RIGHT);
+				break;
+			case Up:
+				robot.move(1, manualRobotOperation);
+				break;
+			case Jump:
+				try {
+					robot.jump();
+				} catch (Exception e) {
+					// TODO switch to game end screen
+					e.printStackTrace();
+				}
+				break;
+			case Down:
+				return false;
+			default:
+				return currentState.keyDown(key, value);
+		}
+		return true;
 	}
 	
 	/**

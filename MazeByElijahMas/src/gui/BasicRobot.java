@@ -10,7 +10,21 @@ import generation.CardinalDirection;
 import generation.Floorplan;
 import generation.Distance;
 import generation.Maze;
+import gui.Constants.UserInput;
 
+/**
+ * 
+ * 
+ * 
+ * ...
+ * 
+ * Note is is the responsibility of the Robot to tell the GUI to change
+ * when an operation (move, rotate, jump) is successfully performed.
+ * This includes changing the state of StatePlaying and 
+ * 
+ * @author HomeFolder
+ *
+ */
 public class BasicRobot implements Robot {
 
 	private Controller control;
@@ -26,8 +40,10 @@ public class BasicRobot implements Robot {
 	private Distance distance;
 	private int[][] dists;
 	private boolean roomSensorIsPresent;
-	boolean initialized;
-	boolean stopped;
+	private boolean initialized;
+	private boolean stopped;
+	private int[] currentPosition;
+	private CardinalDirection currentDirection;
 	
 	/**
 	 * ArrayList that enumerates cardinal directions
@@ -76,6 +92,9 @@ public class BasicRobot implements Robot {
 		dists=distance.getAllDistanceValues();
 		stopped=false;
 		
+		currentPosition = control.getCurrentPosition();
+		currentDirection = control.getCurrentDirection();
+		
 		//
 		//nonce value added, it is changed by calculateObstacleDistance
 		for(int directionCounter=0; directionCounter<4; directionCounter++)
@@ -113,17 +132,16 @@ public class BasicRobot implements Robot {
 	
 	@Override
 	public int[] getCurrentPosition() throws Exception {
-		int[] pos=control.getCurrentPosition();
-		if(!maze.isValidPosition(pos[0], pos[1]))
+		if(!maze.isValidPosition(currentPosition[0], currentPosition[1]))
 			throw new Exception(String.format(
 					"Exception: %s is an invalid position for a maze of dimensions %d x %d",
-					Arrays.toString(pos), maze.getWidth() ,maze.getHeight() ));
-		return pos;
+					Arrays.toString(currentPosition), maze.getWidth() ,maze.getHeight() ));
+		return currentPosition;
 	}
 
 	@Override
 	public CardinalDirection getCurrentDirection() {
-		return control.getCurrentDirection();
+		return currentDirection;
 	}
 
 	@Override
@@ -268,6 +286,32 @@ public class BasicRobot implements Robot {
 		return true;
 	}
 	
+	private CardinalDirection getNewDirection(Turn turn) {
+		int index = WestSouthEastNorth.indexOf(currentDirection);
+		int adjust;
+		if(turn==Turn.LEFT) adjust=-1;
+		else adjust=1;
+		return WestSouthEastNorth.get(Math.floorMod(index+adjust,4));
+	}
+	
+	private void rotateLeft() {
+		System.out.print("robot is rotating LEFT: ");
+		Collections.rotate(obstacleDistancesForwardRightBackwardLeft, 1);
+		currentDirection=getNewDirection(Turn.LEFT);
+		changeEnergyLevel(energyUsedForRotation);
+		control.keyDown(UserInput.Left, 0);
+		assert control.getCurrentDirection()==currentDirection;
+	}
+	
+	private void rotateRight() {
+		System.out.print("robot is rotating RIGHT: ");
+		Collections.rotate(obstacleDistancesForwardRightBackwardLeft, -1);
+		currentDirection=getNewDirection(Turn.RIGHT);
+		changeEnergyLevel(energyUsedForRotation);
+		control.keyDown(UserInput.Right, 0);
+		assert control.getCurrentDirection()==currentDirection;
+	}
+	
 	@Override
 	public void rotate(Turn turn) {
 		if(hasStopped()) {
@@ -279,23 +323,19 @@ public class BasicRobot implements Robot {
 				// moving right is aligned with moving forward in array
 				// which means that for what was right to become the new forward,
 				// we have to shift things backwards
-				System.out.print("robot is rotating RIGHT: ");
-				Collections.rotate(obstacleDistancesForwardRightBackwardLeft, -1);
+				rotateRight();
 				break;
 			case LEFT:
 				// opposite of right
-				Collections.rotate(obstacleDistancesForwardRightBackwardLeft, 1);
-				System.out.print("robot is rotating LEFT: ");
+				rotateLeft();
 				break;
 			case AROUND:
 				// two rotations in same direction, which direction does not matter
-				System.out.print("robot is rotating AROUND: ");
-				Collections.rotate(obstacleDistancesForwardRightBackwardLeft, 1);
-				Collections.rotate(obstacleDistancesForwardRightBackwardLeft, 1);
-				if(!changeEnergyLevel(energyUsedForRotation)) return;
+				System.out.println("robot is rotating AROUND: ");
+				rotateLeft();
+				rotateLeft();
 				break;
 		}
-		if(!changeEnergyLevel(energyUsedForRotation)) return;
 		System.out.println(obstacleDistancesForwardRightBackwardLeft);
 	}
 
@@ -316,6 +356,10 @@ public class BasicRobot implements Robot {
 		}
 	}
 	
+	private void incrementCurrentPosition() {
+		currentPosition=addArrays(currentPosition,currentDirection.getDirection());
+	}
+	
 	private void moveSingle(int distance, boolean manual){
 		// TODO account for crash
 		// TODO how to factor in manual parameter?
@@ -328,6 +372,7 @@ public class BasicRobot implements Robot {
 		boolean no_move=false;
 		if(atForwardWall()) {
 			//case of a crash
+			//TODO cause game to go to end screen if crash is enabled (create a field for this)
 			no_move=true;
 			if(manual) {
 				stopped=true;
@@ -337,13 +382,26 @@ public class BasicRobot implements Robot {
 		else {
 			if(!changeEnergyLevel(energyUsedForMove)) return;
 			//no crash here
+			incrementCurrentPosition();
 			changeDistancesInMoveForward();
 			odometerReading++;
+			
 			assert odometerReading*energyUsedForMove<=control.getEnergyConsumedByRobotAtPresent() :
 				"error: the robot cannot have used less energy than was required for odometer reading";
+			
+			control.keyDown(UserInput.Up, 0);
+			
+			assert Arrays.equals(control.getCurrentPosition(), currentPosition);
 		}
 		String msg = no_move ? "cannot move here: wall in the way" : "moving as normal";
 		System.out.printf("%s  - %s\n",obstacleDistancesForwardRightBackwardLeft,msg);
+	}
+	
+	private static int[] addArrays(int[] a1, int[] a2) {
+		if(a1.length!=a2.length) return null;
+		int[] result=new int[a1.length];
+		for(int i=0; i<a1.length; i++) result[i]=a1[i]+a2[i];
+		return result;
 	}
 
 	@Override
@@ -363,8 +421,14 @@ public class BasicRobot implements Robot {
 			//a jump is required
 			System.out.println("performing jump operation");
 			if(!changeEnergyLevel(energyUsedForJump)) return;
+			
+			// change position before calculating distances
+			incrementCurrentPosition();
 			calculateDistances();
 			
+			//TODO handle case that we tried to jump outside maze, which ends the game
+			control.keyDown(UserInput.Jump, 0);
+			assert Arrays.equals(control.getCurrentPosition(), currentPosition);
 		}
 	}
 	

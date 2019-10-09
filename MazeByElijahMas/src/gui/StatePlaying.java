@@ -7,7 +7,6 @@ import java.awt.FontMetrics;
 import java.awt.Graphics;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.stream.IntStream;
 
 import generation.CardinalDirection;
 import generation.Floorplan;
@@ -71,6 +70,7 @@ public class StatePlaying extends DefaultState {
 	boolean started;
 	
 	Robot robot;
+	private boolean robotEnabled;
 	
 	public StatePlaying() {
 		started = false;
@@ -95,6 +95,7 @@ public class StatePlaying extends DefaultState {
 		control = controller;
 		//keep the reference to the robot to relay battery level information
 		robot = control.getRobot();
+		robotEnabled = (null!=robot) ? true : false;
 		// keep the reference to the panel for drawing
 		this.panel = panel;
 		//
@@ -110,7 +111,7 @@ public class StatePlaying extends DefaultState {
 		walkStep = 0; // counts incremental steps during move/rotate operation
 		
 		
-		controller.setupRobot();
+		if(robotEnabled) controller.setupRobot();
 		if (panel != null) {
 			startDrawer();
 		}
@@ -149,8 +150,8 @@ public class StatePlaying extends DefaultState {
 		assert(dx == 1);
 		assert(dy == 0);
 	}
- 
-
+	
+	
 	/**
 	 * <p>Method incorporates all reactions to keyboard input in original code, 
 	 * The simple key listener calls this method to communicate input.
@@ -172,69 +173,69 @@ public class StatePlaying extends DefaultState {
 		// react to input to display solution (on/off toggle switch)
 		// react to input to increase/reduce map scale
 		switch (key) {
-		case Start: // misplaced, do nothing
-			break;
-		case Up: // move forward
-			walk(1);
-			// check termination, did we leave the maze?
-			if (isOutside(px,py)) {
-				control.switchFromPlayingToWinning(0);
-			}
-			break;
-		case Left: // turn left
-			rotate(1);
-			break;
-		case Right: // turn right
-			rotate(-1);
-			break;
-		case Down: // move backward
-			walk(-1);
-			// check termination, did we leave the maze?
-			if (isOutside(px,py)) {
-				control.switchFromPlayingToWinning(0);
-			}
-			break;
-		case ReturnToTitle: // escape to title screen
-			control.switchToTitle();
-			break;
-		case Jump: // make a step forward even through a wall
-			// go to position if within maze
-			if (mazeConfig.isValidPosition(px + dx, py + dy)) {
-				setCurrentPosition(px + dx, py + dy) ;
-				//tell robot to perform jump operation
-				try {
-					robot.jump();
-				} catch (Exception e) {
-					System.out.println("robot cannot perform jump operation:");
-					e.printStackTrace();
+			case Start: // misplaced, do nothing
+				break;
+			case Up: // move forward
+				walk(1);
+				// check termination, did we leave the maze?
+				if (isOutside(px,py)) {
+					control.switchFromPlayingToWinning(0);
 				}
+				break;
+			case Left: // turn left
+				rotate(1);
+				break;
+			case Right: // turn right
+				rotate(-1);
+				break;
+			case Down: // move backward
+				walk(-1);
+				// check termination, did we leave the maze?
+				if (isOutside(px,py)) {
+					control.switchFromPlayingToWinning(0);
+				}
+				break;
+			case ReturnToTitle: // escape to title screen
+				control.switchToTitle();
+				break;
+			case Jump: // make a step forward even through a wall
+				// go to position if within maze
+				if (mazeConfig.isValidPosition(px + dx, py + dy)) {
+					setCurrentPosition(px + dx, py + dy) ;
+					//tell robot to perform jump operation
+					/*try {
+						robot.jump();
+					} catch (Exception e) {
+						System.out.println("robot cannot perform jump operation:");
+						e.printStackTrace();
+					}*/
+					draw() ;
+				}
+				break;
+			case ToggleLocalMap: // show local information: current position and visible walls
+				// precondition for showMaze and showSolution to be effective
+				// acts as a toggle switch
+				mapMode = !mapMode;		 
+				draw() ; 
+				break;
+			case ToggleFullMap: // show the whole maze
+				// acts as a toggle switch
+				showMaze = !showMaze;	   
+				draw() ; 
+				break;
+			case ToggleSolution: // show the solution as a yellow line towards the exit
+				// acts as a toggle switch
+				showSolution = !showSolution;	   
 				draw() ;
-			}
-			break;
-		case ToggleLocalMap: // show local information: current position and visible walls
-			// precondition for showMaze and showSolution to be effective
-			// acts as a toggle switch
-			mapMode = !mapMode;		 
-			draw() ; 
-			break;
-		case ToggleFullMap: // show the whole maze
-			// acts as a toggle switch
-			showMaze = !showMaze;	   
-			draw() ; 
-			break;
-		case ToggleSolution: // show the solution as a yellow line towards the exit
-			// acts as a toggle switch
-			showSolution = !showSolution;	   
-			draw() ;
-			break;
-		case ZoomIn: // zoom into map
-			adjustMapScale(true);
-			draw() ;
-			break ;
-		case ZoomOut: // zoom out of map
-			adjustMapScale(false);
-			draw() ; 
-			break ;
+				break;
+			case ZoomIn: // zoom into map
+				adjustMapScale(true);
+				draw() ;
+				break ;
+			case ZoomOut: // zoom out of map
+				adjustMapScale(false);
+				draw() ; 
+				break ;
 		} // end of internal switch statement for playing state
 		return true;
 	}
@@ -327,7 +328,7 @@ public class StatePlaying extends DefaultState {
 					isInShowMazeMode(),isInShowSolutionMode()) ;
 		}
 		
-		drawRobotMetrics(false);
+		if(robotEnabled) drawRobotMetrics(false);
 		
 		// update the screen with the buffer graphics
 		panel.update() ;
@@ -384,13 +385,13 @@ public class StatePlaying extends DefaultState {
 	}
 	boolean isInMapMode() { 
 		return mapMode ; 
-	} 
+	}
 	boolean isInShowMazeMode() { 
 		return showMaze ; 
-	} 
+	}
 	boolean isInShowSolutionMode() { 
 		return showSolution ; 
-	} 
+	}
 	public Maze getMazeConfiguration() {
 		return mazeConfig ;
 	}
@@ -453,9 +454,9 @@ public class StatePlaying extends DefaultState {
 		// because choice of direction values are more limited.
 		setDirectionToMatchCurrentAngle();
 		
-		if(1==dir) robot.rotate(Turn.LEFT);
-		else if(-1==dir) robot.rotate(Turn.RIGHT);
-		drawRobotMetrics(true);
+		//if(1==dir) robot.rotate(Turn.LEFT);
+		//else if(-1==dir) robot.rotate(Turn.RIGHT);
+		if(robotEnabled) drawRobotMetrics(true);
 		
 		//logPosition(); // debugging
 	}
@@ -480,11 +481,10 @@ public class StatePlaying extends DefaultState {
 		}
 		setCurrentPosition(px + dir*dx, py + dir*dy) ;
 		walkStep = 0; // reset counter for next time
-		robot.move(dir, control.manualRobotOperation);
 		
 		// move the robot
-		
-		drawRobotMetrics(true);
+		//robot.move(dir, control.manualRobotOperation);
+		if(robotEnabled) drawRobotMetrics(true);
 		
 		//logPosition(); // debugging
 	}
