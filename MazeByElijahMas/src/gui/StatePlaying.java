@@ -5,6 +5,7 @@ import gui.Constants.UserInput;
 import java.awt.Color;
 import java.awt.FontMetrics;
 import java.awt.Graphics;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.stream.IntStream;
 
@@ -197,8 +198,13 @@ public class StatePlaying extends DefaultState {
 			// go to position if within maze
 			if (mazeConfig.isValidPosition(px + dx, py + dy)) {
 				setCurrentPosition(px + dx, py + dy) ;
-				//if(robot senses distance in front to wall is > 1) walk, don't jump;
-				//else jump;
+				//tell robot to perform jump operation
+				try {
+					robot.jump();
+				} catch (Exception e) {
+					System.out.println("robot cannot perform jump operation:");
+					e.printStackTrace();
+				}
 				draw() ;
 			}
 			break;
@@ -230,6 +236,17 @@ public class StatePlaying extends DefaultState {
 		return true;
 	}
 	
+	private ArrayList<Object> getRobotDistances() {
+		ArrayList<Object> d = new ArrayList<Object>(4);
+		int v;
+		for(Direction dir: BasicRobot.ForwardRightBackwardLeft) {
+			v=robot.distanceToObstacle(dir);
+			d.add(Integer.MAX_VALUE==v ? "inf" : v);
+		}
+		
+		return d;
+	}
+	
 	private void drawRobotMetrics(boolean performRedraw) {
 		// follow the template used in SimpleScreens methods
 		Graphics g = panel.getBufferGraphics() ;
@@ -238,19 +255,13 @@ public class StatePlaying extends DefaultState {
 		
 		// print battery level & location
 		try {
-			Object[] distances = (Arrays
-					.asList(BasicRobot.ForwardRightBackwardLeft)
-					.stream()
-					.map(d -> robot.distanceToObstacle(d))
-					.toArray());
-			
 			g.drawString(
 				String.format(
 					"battery: %d, loc: %s, cd: %s, dist: %s",//+str
 					(int)robot.getBatteryLevel(),
 					Arrays.toString(robot.getCurrentPosition()),
 					robot.getCurrentDirection(),
-					Arrays.deepToString(distances)
+					getRobotDistances()
 				),
 				Constants.BATTERY_INDICATOR_X,
 				Constants.BATTERY_INDICATOR_Y

@@ -27,6 +27,7 @@ public class BasicRobot implements Robot {
 	private int[][] dists;
 	private boolean roomSensorIsPresent;
 	boolean initialized;
+	boolean stopped;
 	
 	/**
 	 * ArrayList that enumerates cardinal directions
@@ -58,6 +59,9 @@ public class BasicRobot implements Robot {
 	public BasicRobot() {}
 	
 	protected void instantiateFields() {
+		assert control.currentState instanceof StatePlaying :
+			"robot instantation prerequires that the Controller be in a playing state";
+		
 		batteryLevel=3000;
 		odometerReading=0;
 		sensorFunctionalFlags = new HashMap<Direction,Boolean>();
@@ -70,22 +74,33 @@ public class BasicRobot implements Robot {
 		floorplan=maze.getFloorplan();
 		distance=maze.getMazedists();
 		dists=distance.getAllDistanceValues();
+		stopped=false;
+		
+		//
+		//nonce value added, it is changed by calculateObstacleDistance
+		for(int directionCounter=0; directionCounter<4; directionCounter++)
+			obstacleDistancesForwardRightBackwardLeft.add(-1);
+		
+		calculateDistances();
+		
 		initialized=true;
 		System.out.println("BasicRobot: instantiateFields completed");
 		System.out.printf("BasicRobot: maze dimensions: %d,%d\n",maze.getWidth(),maze.getHeight());
-		
-		//int directionCounter=0;
+	}
+	
+	private void calculateDistances(Direction... exclusions) {
+		List<Direction> exclude = Arrays.asList(exclusions);
 		for(Direction d: ForwardRightBackwardLeft) {
-			//nonce value added, it is changed by calculateObstacleDistance
-			obstacleDistancesForwardRightBackwardLeft.add(-1);
+			if(exclude.contains(d)) {
+				System.out.println("calculateDistances: skipping "+d);
+				continue;
+			}
 			try {
 				calculateObstacleDistance(d);
 			} catch (Exception e) {
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
 		}
-		
 	}
 
 	@Override
@@ -99,9 +114,7 @@ public class BasicRobot implements Robot {
 	@Override
 	public int[] getCurrentPosition() throws Exception {
 		int[] pos=control.getCurrentPosition();
-		int p0=pos[0],p1=pos[1];
-		int w=maze.getWidth(),h=maze.getHeight();
-		if(pos[0]<0 || pos[0]>maze.getWidth() || pos[1]<0 || pos[1]>maze.getHeight())
+		if(!maze.isValidPosition(pos[0], pos[1]))
 			throw new Exception(String.format(
 					"Exception: %s is an invalid position for a maze of dimensions %d x %d",
 					Arrays.toString(pos), maze.getWidth() ,maze.getHeight() ));
@@ -195,8 +208,7 @@ public class BasicRobot implements Robot {
 
 	@Override
 	public boolean hasStopped() {
-		// TODO Auto-generated method stub
-		return false;
+		return stopped;
 	}
 
 	@Override
@@ -206,20 +218,34 @@ public class BasicRobot implements Robot {
 		return obstacleDistancesForwardRightBackwardLeft.get(getDirectionIndex(direction));
 	}
 	
-	//private void 
-	
-	private void calculateObstacleDistance(Direction direction) throws Exception {
+	private boolean calculateObstacleDistance(Direction direction) throws Exception {
+		if(hasStopped()) {
+			System.out.println("cannot calculate distance: robot stopped");
+			return false;
+		}
 		try {
+			if(!changeEnergyLevel(energyUsedForDistanceSensing)) return false;
 			int d = getObstacleDistance(direction);
-			changeEnergyLevel(energyUsedForDistanceSensing);
 			
 			obstacleDistancesForwardRightBackwardLeft.set(getDirectionIndex(direction), d);
 			
-			//return ;
+			return true;
 		} catch (Exception e){
 			throw new UnsupportedOperationException("distanceToObstacle at direction "+direction+" failed:",e);
 		}
 		
+	}
+	
+	private boolean hasBattery() {
+		return getBatteryLevel()>0;
+	}
+	
+	private void setStopped() {
+		stopped=true;
+	}
+	
+	private void stopCheck() {
+		if(!hasBattery()) setStopped();
 	}
 
 	@Override
@@ -244,7 +270,10 @@ public class BasicRobot implements Robot {
 	
 	@Override
 	public void rotate(Turn turn) {
-		// TODO change direction
+		if(hasStopped()) {
+			System.out.println("the robot has stopped; cannot perform rotate operation");
+			return;
+		}
 		switch(turn) {
 			case RIGHT:
 				// moving right is aligned with moving forward in array
@@ -263,30 +292,50 @@ public class BasicRobot implements Robot {
 				System.out.print("robot is rotating AROUND: ");
 				Collections.rotate(obstacleDistancesForwardRightBackwardLeft, 1);
 				Collections.rotate(obstacleDistancesForwardRightBackwardLeft, 1);
-				changeEnergyLevel(energyUsedForRotation);
+				if(!changeEnergyLevel(energyUsedForRotation)) return;
 				break;
 		}
-		changeEnergyLevel(energyUsedForRotation);
+		if(!changeEnergyLevel(energyUsedForRotation)) return;
 		System.out.println(obstacleDistancesForwardRightBackwardLeft);
 	}
 
 	@Override
-	public void move(int distance, boolean manual) {
+	public void move(int distance, boolean manual){
+		if(distance<0) {
+			System.out.println("BasicRobot.move: cannot move negative distance");
+			return;
+		}
+		
+		for(int moveCount=0; moveCount<distance; moveCount++) {
+			if(hasStopped()) {
+				System.out.println("the robot has stopped; cannot perform move operation");
+				return;
+			}
+			
+			moveSingle(1,manual);
+		}
+	}
+	
+	private void moveSingle(int distance, boolean manual){
 		// TODO account for crash
 		// TODO how to factor in manual parameter?
 		// TODO allow 'distance' parameter to be more than 1
 		// TODO prevent negative 'distance' values (StatePlaying may submit -1 as a value)
-		
+				// this may mean preventing StatePlaying from moving backwards
 		
 		System.out.printf("robot move: %s   -->   ",obstacleDistancesForwardRightBackwardLeft);
 			
-		changeEnergyLevel(energyUsedForMove);
 		boolean no_move=false;
 		if(atForwardWall()) {
 			//case of a crash
 			no_move=true;
+			if(manual) {
+				stopped=true;
+				return;
+			}
 		}
 		else {
+			if(!changeEnergyLevel(energyUsedForMove)) return;
 			//no crash here
 			changeDistancesInMoveForward();
 		}
@@ -296,15 +345,22 @@ public class BasicRobot implements Robot {
 
 	@Override
 	public void jump() throws Exception {
+		if(hasStopped()) {
+			System.out.println("the robot has stopped; cannot perform jump operation");
+			return;
+		}
 		// TODO change position, account for possibility that jump was unnecessary and replace with walk operation
-		changeEnergyLevel(energyUsedForJump);
-		if(atForwardWall()) {
+		if(!atForwardWall()) {
 			//case where a jump is not required, a walk suffices
+			System.out.println("jump is not required: performing move operation");
 			move(1,control.manualRobotOperation);
 			// TODO 'manual' parameter in move--what is proper value?
 		}
 		else {
 			//a jump is required
+			System.out.println("performing jump operation");
+			if(!changeEnergyLevel(energyUsedForJump)) return;
+			calculateDistances();
 			
 		}
 	}
@@ -318,8 +374,14 @@ public class BasicRobot implements Robot {
 	
 	
 	
+	/**
+	 * Check if there is a wall immediately in front of the robot.
+	 * @return true if distance to forward wall is 0
+	 */
 	private boolean atForwardWall() {
-		return 0==obstacleDistancesForwardRightBackwardLeft.get(0);
+		return 0==obstacleDistancesForwardRightBackwardLeft.get(
+			getDirectionIndex(Direction.FORWARD)
+		);
 	}
 	
 	private void changeDistancesInMoveForward() {
@@ -352,8 +414,16 @@ public class BasicRobot implements Robot {
 		}
 	}
 	
-	private void changeEnergyLevel(float amount) {
-		setBatteryLevel(getBatteryLevel()+amount);
+	private boolean changeEnergyLevel(float amount) {
+		float newEnergy=getBatteryLevel()+amount;
+		if(newEnergy<=0) {
+			setStopped();
+			setBatteryLevel(0);
+			return false;
+		}
+		//System.out.printf("setting battery: change=%d\n",(int)amount);
+		setBatteryLevel(newEnergy);
+		return true;
 	}
 	
 	private boolean hasDirectionalSensor(Direction direction) {
@@ -375,7 +445,7 @@ public class BasicRobot implements Robot {
 			y+=dy;
 			
 			// if true, we've reached beyond the maze--we can see through the exit
-			if(x<0 || x>=maze.getWidth() || y<0 || y>=maze.getHeight()) return Integer.MAX_VALUE;
+			if(!maze.isValidPosition(x, y)) return Integer.MAX_VALUE;
 		}
 		
 		
