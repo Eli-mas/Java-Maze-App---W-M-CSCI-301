@@ -152,10 +152,13 @@ public class StatePlaying extends DefaultState {
  
 
 	/**
-	 * Method incorporates all reactions to keyboard input in original code, 
+	 * <p>Method incorporates all reactions to keyboard input in original code, 
 	 * The simple key listener calls this method to communicate input.
 	 * Method requires {@link #start(Controller, MazePanel) start} to be
-	 * called before.
+	 * called before.</p>
+	 * 
+	 * <p>new in P3: now interacts with the robot class to coordinate
+	 * move/rotate/jump operations.</p>
 	 * @param key provides the feature the user selected
 	 * @param value is not used, exists only for consistency across State classes
 	 * @return false if not started yet otherwise true
@@ -247,14 +250,20 @@ public class StatePlaying extends DefaultState {
 		return d;
 	}
 	
+	/**
+	 * On the playing screen, display information about the robot, including
+	 * position, direction, battery level, and distances to walls on each side.
+	 * @param performRedraw whether to force a redraw of the screen; used when {@link #draw()}
+	 * is called before robot metrics are updated within another method.
+	 */
 	private void drawRobotMetrics(boolean performRedraw) {
 		// follow the template used in SimpleScreens methods
 		Graphics g = panel.getBufferGraphics() ;
 		FontMetrics fm=g.getFontMetrics();
 		g.setColor(Color.orange);
 		
-		// print battery level & location
 		try {
+			// print battery level, position, direction, distances
 			g.drawString(
 				String.format(
 					"battery: %d, loc: %s, cd: %s, dist: %s",//+str
@@ -267,24 +276,28 @@ public class StatePlaying extends DefaultState {
 				Constants.BATTERY_INDICATOR_Y
 			);
 			
-			String str="";
+			// check whether robot is at exit and/or can see out of maze
+			// if so print messages to indicate so
+			String lookingOutString="";
 			for(Direction d: Direction.values()) {
 				if(robot.canSeeThroughTheExitIntoEternity(d)){
-					str+="looking out";
-					System.out.println("StatePlaying.draw: looking out");
+					lookingOutString+="looking out";
 					break;
 				}
 			}
-			if(robot.isAtExit()) {
-				str+=" at exit";
-				System.out.println("StatePlaying.draw: at exit");
-			}
+			if(robot.isAtExit()) lookingOutString+=" at exit";
 			
-			if(str.length()>0) {
-				g.setColor(Color.cyan);
+			g.setColor(Color.cyan);
+			
+			//render odometer reading
+			String odometerString = "odometer: "+robot.getOdometerReading()+"   ";
+			g.drawString(odometerString, Constants.BATTERY_INDICATOR_X, 2*Constants.BATTERY_INDICATOR_Y);
+			
+			// only happens if one of the above conditions were true
+			if(lookingOutString.length()>0) {
 				g.drawString(
-					str,
-					Constants.BATTERY_INDICATOR_X,
+					lookingOutString,
+					Constants.BATTERY_INDICATOR_X+fm.stringWidth(odometerString),
 					2*Constants.BATTERY_INDICATOR_Y
 				);
 			}

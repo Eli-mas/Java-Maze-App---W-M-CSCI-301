@@ -338,6 +338,9 @@ public class BasicRobot implements Robot {
 			if(!changeEnergyLevel(energyUsedForMove)) return;
 			//no crash here
 			changeDistancesInMoveForward();
+			odometerReading++;
+			assert odometerReading*energyUsedForMove<=control.getEnergyConsumedByRobotAtPresent() :
+				"error: the robot cannot have used less energy than was required for odometer reading";
 		}
 		String msg = no_move ? "cannot move here: wall in the way" : "moving as normal";
 		System.out.printf("%s  - %s\n",obstacleDistancesForwardRightBackwardLeft,msg);
