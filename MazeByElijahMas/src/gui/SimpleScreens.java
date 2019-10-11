@@ -4,6 +4,9 @@ import java.awt.Color;
 import java.awt.Font;
 import java.awt.FontMetrics;
 import java.awt.Graphics;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 import gui.Constants.StateGUI;
 
@@ -122,42 +125,74 @@ public class SimpleScreens {
 			redrawFinish(g);
 		}
 	}
+	
+	private String getFinishingRobotString() {
+		if(controller.getRobot().hasStopped()) return controller.getRobotFailureMessage();
+		else return String.format(
+					"Energy used: %d/%d; path length: %d",
+					(int)controller.getEnergyConsumedByRobotAtPresent(),
+					(int)controller.getInitialRobotEnergyLevel(),
+					controller.getRobot().getOdometerReading()
+		);
+	}
+	
+	private void redrawFinishWinning(Graphics gc) {
+		List robotInput = (!controller.robotEnabled) ? null :
+			Arrays.asList(getFinishingRobotString(),250,Color.orange,
+					new Font("TimesRoman", Font.BOLD, 24));
+		
+		drawFinishScreen(gc,
+			Arrays.asList("You won!", 100, Color.yellow, largeBannerFont),
+			Arrays.asList("Congratulations!", 160, Color.cyan, smallBannerFont),
+			Arrays.asList("Hit any key to restart", 300, Color.white),
+			robotInput
+		);
+	}
+	
+	private void redrawFinishLosing(Graphics gc) {
+		drawFinishScreen(gc,
+			Arrays.asList("Game is over", 100, Color.yellow, largeBannerFont),
+			Arrays.asList("Sorry...", 160, Color.cyan, smallBannerFont),
+			Arrays.asList("Hit any key to restart", 300, Color.white),
+			Arrays.asList(getFinishingRobotString(),250,Color.orange,mediumBannerFont)
+		);
+	}
+	
+	private void drawFinishScreen(Graphics gc, List... fontProp) {
+		// produce blue background
+		gc.setColor(Color.blue);
+		gc.fillRect(0, 0, Constants.VIEW_WIDTH, Constants.VIEW_HEIGHT);
+		
+		String message;
+		int ypos;
+			
+		for(List p: fontProp) {
+			//String message, int ypos, Color c, Font f
+			if(null==p) continue;
+			message=(String)p.get(0);
+			ypos=(int)p.get(1);
+			Color c = null;
+			Font f = null;
+			try{
+				c=(Color)p.get(2);
+				f=(Font)p.get(3);
+			} catch (IndexOutOfBoundsException e) {}
+			if(null!=c) gc.setColor(c);
+			if(null!=f) gc.setFont(f);
+			centerString(gc, gc.getFontMetrics(), message, ypos);
+		}
+	}
+	
 	/**
 	 * Helper method for redraw to draw final screen, screen is hard coded
 	 * @param gc graphics is the off-screen image
 	 */
 	private void redrawFinish(Graphics gc) {
-		// produce blue background
-		gc.setColor(Color.blue);
-		gc.fillRect(0, 0, Constants.VIEW_WIDTH, Constants.VIEW_HEIGHT);
-		// write the title 
-		gc.setFont(largeBannerFont);
-		FontMetrics fm = gc.getFontMetrics();
-		gc.setColor(Color.yellow);
-		centerString(gc, fm, "You won!", 100);
-		// write some extra blurb
-		gc.setColor(Color.cyan);
-		gc.setFont(smallBannerFont);
-		fm = gc.getFontMetrics();
-		centerString(gc, fm, "Congratulations!", 160);
-		//write energy consumption by robot
-		gc.setFont(mediumBannerFont);
-		fm = gc.getFontMetrics();
-		gc.setColor(Color.orange);
-		centerString(
-				gc,
-				fm,
-				String.format(
-						"Energy used is: %d/%d",
-						(int)controller.getEnergyConsumedByRobotAtPresent(),
-						(int)controller.getInitialRobotEnergyLevel()
-						),
-				250);
-		// write the instructions
-		gc.setColor(Color.white);
-		//gc.setFont(smallBannerFont);
-		//fm = gc.getFontMetrics();
-		centerString(gc, fm, "Hit any key to restart", 300);
+		if(controller.robotEnabled) {
+			if(controller.getRobot().hasStopped()) redrawFinishLosing(gc);
+			else redrawFinishWinning(gc);
+		}
+		else redrawFinishWinning(gc);
 	}
 	
 	/**

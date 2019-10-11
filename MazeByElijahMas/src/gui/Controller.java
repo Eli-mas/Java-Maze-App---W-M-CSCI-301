@@ -85,6 +85,7 @@ public class Controller {
 	 */
 	Robot robot;
 	boolean robotEnabled;
+	private String robotFailureMessage="";
 	/**
 	 * The driver that interacts with the robot starting from P3
 	 */
@@ -281,7 +282,14 @@ public class Controller {
 	public void setRobotAndDriver(Robot robot, RobotDriver robotdriver) {
 		this.robot = robot;
 		driver = robotdriver;
-		
+	}
+	
+	public void setRobotFailureMessage(String m) {
+		robotFailureMessage=m;
+	}
+	
+	public String getRobotFailureMessage() {
+		return robotFailureMessage;
 	}
 	
 	/**

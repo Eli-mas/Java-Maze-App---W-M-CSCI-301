@@ -44,6 +44,12 @@ public class BasicRobot implements Robot {
 	private boolean stopped;
 	private int[] currentPosition;
 	private CardinalDirection currentDirection;
+	private static boolean crashEnabled=true;
+	
+	private static final String badJumpMessage="robot tried bad jump";
+	private static final String badMoveMessage="robot crashed";
+	private static final String noEnergyMessage="robot out of energy";
+	private static final float initialEnergyLevel=3000f;
 	
 	/**
 	 * ArrayList that enumerates cardinal directions
@@ -78,7 +84,7 @@ public class BasicRobot implements Robot {
 		assert control.currentState instanceof StatePlaying :
 			"robot instantation prerequires that the Controller be in a playing state";
 		
-		batteryLevel=3000;
+		batteryLevel=initialEnergyLevel;
 		odometerReading=0;
 		sensorFunctionalFlags = new HashMap<Direction,Boolean>();
 		
@@ -242,7 +248,7 @@ public class BasicRobot implements Robot {
 			return false;
 		}
 		try {
-			if(!changeEnergyLevel(energyUsedForDistanceSensing)) return false;
+			changeEnergyLevel(energyUsedForDistanceSensing);
 			int d = getObstacleDistance(direction);
 			
 			obstacleDistancesForwardRightBackwardLeft.set(getDirectionIndex(direction), d);
@@ -289,8 +295,11 @@ public class BasicRobot implements Robot {
 	private CardinalDirection getNewDirection(Turn turn) {
 		int index = WestSouthEastNorth.indexOf(currentDirection);
 		int adjust;
-		if(turn==Turn.LEFT) adjust=-1;
-		else adjust=1;
+		
+		// array is arranged in left-to-right order
+		adjust = (turn==Turn.LEFT) ? -1 : 1;
+		
+		// use floorMod to prevent negative index
 		return WestSouthEastNorth.get(Math.floorMod(index+adjust,4));
 	}
 	
@@ -299,6 +308,7 @@ public class BasicRobot implements Robot {
 		Collections.rotate(obstacleDistancesForwardRightBackwardLeft, 1);
 		currentDirection=getNewDirection(Turn.LEFT);
 		changeEnergyLevel(energyUsedForRotation);
+		if(hasStopped()) return;
 		control.keyDown(UserInput.Left, 0);
 		assert control.getCurrentDirection()==currentDirection;
 	}
@@ -308,6 +318,7 @@ public class BasicRobot implements Robot {
 		Collections.rotate(obstacleDistancesForwardRightBackwardLeft, -1);
 		currentDirection=getNewDirection(Turn.RIGHT);
 		changeEnergyLevel(energyUsedForRotation);
+		if(hasStopped()) return;
 		control.keyDown(UserInput.Right, 0);
 		assert control.getCurrentDirection()==currentDirection;
 	}
@@ -353,11 +364,19 @@ public class BasicRobot implements Robot {
 			}
 			
 			moveSingle(1,manual);
+			try {getCurrentPosition();}
+			catch (Exception e) {return;}
 		}
 	}
 	
 	private void incrementCurrentPosition() {
 		currentPosition=addArrays(currentPosition,currentDirection.getDirection());
+	}
+	
+	private void endGame(String failureMessage) {
+		setStopped();
+		control.setRobotFailureMessage(failureMessage);
+		control.switchFromPlayingToWinning(odometerReading);
 	}
 	
 	private void moveSingle(int distance, boolean manual){
@@ -371,30 +390,28 @@ public class BasicRobot implements Robot {
 			
 		boolean no_move=false;
 		if(atForwardWall()) {
-			//case of a crash
-			//TODO cause game to go to end screen if crash is enabled (create a field for this)
-			no_move=true;
-			if(manual) {
-				stopped=true;
-				return;
-			}
+			System.out.println();
+			endGame(badMoveMessage);
 		}
 		else {
-			if(!changeEnergyLevel(energyUsedForMove)) return;
+			changeEnergyLevel(energyUsedForMove);
+			if(hasStopped()) return;
 			//no crash here
 			incrementCurrentPosition();
-			changeDistancesInMoveForward();
 			odometerReading++;
+			changeDistancesInMoveForward();
+			control.keyDown(UserInput.Up, 0);
+			//try {getCurrentPosition();}
+			//catch (Exception e) {return;}
 			
 			assert odometerReading*energyUsedForMove<=control.getEnergyConsumedByRobotAtPresent() :
 				"error: the robot cannot have used less energy than was required for odometer reading";
 			
-			control.keyDown(UserInput.Up, 0);
 			
 			assert Arrays.equals(control.getCurrentPosition(), currentPosition);
+			String msg = no_move ? "cannot move here: wall in the way" : "moving as normal";
+			System.out.printf("%s  - %s\n",obstacleDistancesForwardRightBackwardLeft,msg);
 		}
-		String msg = no_move ? "cannot move here: wall in the way" : "moving as normal";
-		System.out.printf("%s  - %s\n",obstacleDistancesForwardRightBackwardLeft,msg);
 	}
 	
 	private static int[] addArrays(int[] a1, int[] a2) {
@@ -420,15 +437,18 @@ public class BasicRobot implements Robot {
 		else {
 			//a jump is required
 			System.out.println("performing jump operation");
-			if(!changeEnergyLevel(energyUsedForJump)) return;
+			changeEnergyLevel(energyUsedForJump);
+			if(hasStopped()) return;
 			
 			// change position before calculating distances
 			incrementCurrentPosition();
-			calculateDistances();
-			
-			//TODO handle case that we tried to jump outside maze, which ends the game
-			control.keyDown(UserInput.Jump, 0);
-			assert Arrays.equals(control.getCurrentPosition(), currentPosition);
+			try {
+				getCurrentPosition(); // this line throws exception for bad jump
+				calculateDistances();
+				control.keyDown(UserInput.Jump, 0);
+				assert Arrays.equals(control.getCurrentPosition(), currentPosition);
+			}
+			catch (Exception e) {endGame(badJumpMessage);}
 		}
 	}
 	
@@ -465,32 +485,38 @@ public class BasicRobot implements Robot {
 		*/
 		if(Integer.MAX_VALUE!=dForward) obstacleDistancesForwardRightBackwardLeft.set(0,dForward-1);
 		if(Integer.MAX_VALUE!=dBackward) obstacleDistancesForwardRightBackwardLeft.set(2,dBackward+1);
+		
+		/*
+		 * possible optimization:
+		 * if robot is in line of exit forwards,
+		 * stop calculating distances on the sides
+		 * this can cause trouble, so I might skip it
+		
+		//if(canSeeThroughTheExitIntoEternity(Direction.FORWARD)) return;
+		*/
+		
 		try {
-			//obstacleDistancesForwardRightBackwardLeft.set(1, calculateObstacleDistance(Direction.RIGHT));
 			calculateObstacleDistance(Direction.RIGHT);
 		} catch (Exception e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			//e.printStackTrace();
 		}
 		try {
-			//obstacleDistancesForwardRightBackwardLeft.set(3, calculateObstacleDistance(Direction.LEFT));
 			calculateObstacleDistance(Direction.LEFT);
 		} catch (Exception e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			//e.printStackTrace();
 		}
 	}
 	
-	private boolean changeEnergyLevel(float amount) {
+	private void changeEnergyLevel(float amount) {
 		float newEnergy=getBatteryLevel()+amount;
-		if(newEnergy<=0) {
+		if(newEnergy<0) {
 			setStopped();
 			setBatteryLevel(0);
-			return false;
+			endGame(noEnergyMessage);
+			return;
 		}
 		//System.out.printf("setting battery: change=%d\n",(int)amount);
 		setBatteryLevel(newEnergy);
-		return true;
 	}
 	
 	private boolean hasDirectionalSensor(Direction direction) {
