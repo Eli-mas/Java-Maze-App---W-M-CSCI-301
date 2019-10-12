@@ -1,5 +1,7 @@
 package gui;
 
+import static org.junit.jupiter.api.DynamicTest.stream;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -57,6 +59,11 @@ public class BasicRobot implements Robot {
 	 * maze in which the robot is operating
 	 */
 	private Maze maze;
+	
+	/**
+	 * width & height of the maze
+	 */
+	private int width, height;
 	
 	/**
 	 * {@link Floorplan floorplan} of {@link #maze}
@@ -133,6 +140,8 @@ public class BasicRobot implements Robot {
 			CardinalDirection.North
 		)
 	;
+	
+	// private int[][] visitCounts; //prospective for Project 4
 	
 	/**
 	 * <p> The four values of {@link Direction}
@@ -251,6 +260,8 @@ public class BasicRobot implements Robot {
 		
 		roomSensorIsPresent=true;
 		maze=control.getMazeConfiguration();
+		width=maze.getWidth();
+		height=maze.getHeight();
 		floorplan=maze.getFloorplan();
 		distance=maze.getMazedists();
 		//dists=distance.getAllDistanceValues();
@@ -268,7 +279,19 @@ public class BasicRobot implements Robot {
 		
 		initialized=true;
 		System.out.println("BasicRobot: instantiateFields completed");
-		System.out.printf("BasicRobot: maze dimensions: %d,%d\n",maze.getWidth(),maze.getHeight());
+		System.out.printf("BasicRobot: maze dimensions: %d,%d\n",width,height);
+		
+		/*
+		//prospective for Project 4
+		visitCounts=new int[width][height];
+		for(int x=0; x<width; x++) {
+			for(int y=0; y<height; y++) {
+				visitCounts[x][y]=0;
+			}
+		}
+		
+		incrementVisitCount(currentPosition);
+		*/
 	}
 
 	/**
@@ -511,7 +534,10 @@ public class BasicRobot implements Robot {
 			}
 			
 			moveSingle(manual);
-			try {getCurrentPosition();}
+			try {
+				getCurrentPosition();
+				//incrementVisitCount(currentPosition); //prospective for Project 4
+			}
 			catch (Exception e) {return;}
 		}
 	}
@@ -622,6 +648,8 @@ public class BasicRobot implements Robot {
 				// i.e. distance to wall backwards is 0
 				calculateDistances(Direction.BACKWARD);
 				obstacleDistancesForwardRightBackwardLeft.set(2, 0);
+				
+				//incrementVisitCount(currentPosition); //prospective for Project 4
 				
 				// robot is finished, push changes to Controller
 				control.keyDown(UserInput.Jump, 0);
@@ -817,6 +845,97 @@ public class BasicRobot implements Robot {
 		
 	}
 	
+	
+	/*
+	
+	
+	//////////////// PLANNING FOR PROJECT 4 ////////////////
+	
+	
+	private boolean hasWallInDirection(Direction d) {
+		return floorplan.hasWall(
+				currentPosition[0],currentPosition[1],
+				translateDirectionToCardinalDirection(d));
+	}
+	
+	private int[] getCoordinateDelta(Direction d) {
+		return translateDirectionToCardinalDirection(d).getDirection();
+	}
+	
+	private int[] getNewCoordinateFromDirectionalMove(Direction d) {
+		return addArrays(currentPosition,getCoordinateDelta(d));
+	}
+	
+	private List<Direction> getMoveableDirections() {
+		ArrayList<Direction> moveableDirections = new ArrayList<Direction>(4);
+		for(Direction d: Direction.values()) {
+			if(!hasWallInDirection(d)) moveableDirections.add(d);
+		}
+		moveableDirections.trimToSize();
+		return moveableDirections;
+	}
+	
+	private int getVisitCount(int[] coor) {
+		return visitCounts[coor[0]][coor[1]];
+	}
+	
+	private void incrementVisitCount(int[] coor) {
+		visitCounts[coor[0]][coor[1]]+=1;
+	}
+	
+	private Direction selectMoveableDirection_byMinimalVisits() {
+		// get the direction which, when the robot moves in this direction,
+		// places the robot at the cell which has the smallest visit count
+		// of the cells to which the robot can move
+		// this works even if there is only one cell the robot can move to
+		return getMoveableDirections()
+			.stream()
+			.min(
+				(d1,d2) ->
+					Integer.compare(
+						getVisitCount(getNewCoordinateFromDirectionalMove(d1)),
+						getVisitCount(getNewCoordinateFromDirectionalMove(d2))
+					)
+			).get();
+		
+	}
+	
+	private void rotateToDirection(Direction d) {
+		switch(d) {
+		case FORWARD: return;
+		case LEFT: rotate(Turn.LEFT); return;
+		case RIGHT: rotate(Turn.RIGHT); return;
+		case BACKWARD: rotate(Turn.AROUND); return;
+		}
+	}
+	
+	private void walkMoveableDirection_byMinimalVisits() {
+		rotateToDirection(selectMoveableDirection_byMinimalVisits());
+		move(1, false);
+	}
+	
+	private Direction directionToExit() {
+		for(Direction d: Direction.values()) {
+			if(canSeeThroughTheExitIntoEternity(d)) return d;
+		}
+		return null;
+	}
+	
+	public void walkOutOfMaze_byMinimalVisits() {
+		Direction d=null;
+		while(null==d) {
+			walkMoveableDirection_byMinimalVisits();
+			d=directionToExit();
+		}
+		rotateToDirection(d);
+		while(true) {
+			move(1,false);
+			try{getCurrentPosition();}
+			catch(Exception e) {break;}
+		}
+		return;
+	}
+	*/
 
 }
 
