@@ -21,6 +21,14 @@ public class BasicRobotTest {
 	 * 
 	 * in a move forward, do forward and backward distances change as expected?
 	 * 
-	 * Immediately after a jump, is the backwards distance always 1?
+	 * Immediately after a jump, is the backwards distance always 0?
+	 * 
+	 * If distance to wall is 0 in any direction, does rotating to face it and moving into it cause a crash?
+	 * 
+	 * Operations that could cause energy depletion:
+	 *     move
+	 *     jump
+	 *     rotate
+	 *     distance sensing
 	 */
 }

@@ -304,8 +304,10 @@ public class StatePlaying extends DefaultState {
 			}
 				
 		} catch (Exception e) {
-			System.out.println("! ! ! StatePlaying: cannot update robot position ! ! !");
-			//e.printStackTrace();
+			if(!e.getMessage().contains("getCurrentPosition")) {
+				System.out.println("! ! ! StatePlaying: cannot update robot position ! ! !");
+				e.printStackTrace();
+			}
 		}
 		
 		// update has to be called manually after walk
