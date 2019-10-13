@@ -8,6 +8,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 
+import comp.MazeMath;
 import generation.CardinalDirection;
 import generation.Floorplan;
 import generation.Distance;
@@ -121,39 +122,15 @@ public class BasicRobot implements Robot {
 	private static final String noEnergyMessage="robot out of energy";
 	
 	/**
-	 * initial battery level before robot begins activity
+	 * initial battery level before robot begins activity;
+	 * public so that it can be modified during testing.
 	 */
-	private static final float initialEnergyLevel=3000f;
+	public static float initialEnergyLevel=3000f;
 	
-	/**
-	 * <p> ArrayList that enumerates cardinal directions
-	 * in order of rotating rightwards, starting at West. </p>
-	 * 
-	 * <p> Instantiated as a list rather than an array
-	 * to utilize the List.{@link List#indexOf(Object) indexOf} method. </p>
-	 */
-	private static final List<CardinalDirection> WestSouthEastNorth =
-		(List<CardinalDirection>)Arrays.asList(
-			CardinalDirection.West,
-			CardinalDirection.South,
-			CardinalDirection.East,
-			CardinalDirection.North
-		)
-	;
+	//private int[][] visitCounts; //prospective for Project 4
 	
-	// private int[][] visitCounts; //prospective for Project 4
+	public static boolean VERBOSE;
 	
-	/**
-	 * <p> The four values of {@link Direction}
-	 * starting at forward and rotating rightward. </p>
-	 * 
-	 * <p> Maintained as a separate array from {@code Direction.values()}
-	 * in case the order of elements in {@code Direction} is ever changed
-	 * unexpectedly. </p>
-	 */
-	protected static final Direction[] ForwardRightBackwardLeft = new Direction[] {
-		Direction.FORWARD, Direction.RIGHT, Direction.BACKWARD, Direction.LEFT
-	};
 	
 	//private static HashMap<Integer,Direction> create_obstacleDistancesIndices(){
 	//	HashMap<Integer,Direction> map = new HashMap<Integer,Direction>(4);
@@ -187,6 +164,10 @@ public class BasicRobot implements Robot {
 	
 	public Controller getController() {
 		return control;
+	}
+	
+	public String getDistanceString() {
+		return obstacleDistancesForwardRightBackwardLeft.toString();
 	}
 
 	@Override
@@ -266,6 +247,7 @@ public class BasicRobot implements Robot {
 		distance=maze.getMazedists();
 		//dists=distance.getAllDistanceValues();
 		stopped=false;
+		VERBOSE=true;
 		
 		currentPosition = control.getCurrentPosition();
 		currentDirection = control.getCurrentDirection();
@@ -278,8 +260,8 @@ public class BasicRobot implements Robot {
 		calculateDistances();
 		
 		initialized=true;
-		System.out.println("BasicRobot: instantiateFields completed");
-		System.out.printf("BasicRobot: maze dimensions: %d,%d\n",width,height);
+		//System.out.println("BasicRobot: instantiateFields completed");
+		//System.out.printf("BasicRobot: maze dimensions: %d,%d\n",width,height);
 		
 		/*
 		//prospective for Project 4
@@ -301,7 +283,7 @@ public class BasicRobot implements Robot {
 	public void setMaze(Controller controller) {
 		control=controller;
 		instantiateFields();
-		System.out.println("robot has set controller");
+		//System.out.println("robot has set controller");
 	}
 	
 	
@@ -383,8 +365,8 @@ public class BasicRobot implements Robot {
 		if(!hasOperationalSensor(direction))
 			throw new UnsupportedOperationException("sensor in direction "+direction+" is not operational");
 		
-		// following list is updated when operations are performed
-		return obstacleDistancesForwardRightBackwardLeft.get(getDirectionIndex(direction));
+		// obstacleDistancesForwardRightBackwardLeft is updated when operations are performed
+		return obstacleDistancesForwardRightBackwardLeft.get(MazeMath.getDirectionIndex(direction));
 	}
 	
 	/**
@@ -405,7 +387,7 @@ public class BasicRobot implements Robot {
 			if(!attemptEnergyDepletion(energyUsedForDistanceSensing)) return false;
 			int d = getObstacleDistance(direction);
 			
-			obstacleDistancesForwardRightBackwardLeft.set(getDirectionIndex(direction), d);
+			obstacleDistancesForwardRightBackwardLeft.set(MazeMath.getDirectionIndex(direction), d);
 			
 			return true;
 		} catch (Exception e){
@@ -438,33 +420,13 @@ public class BasicRobot implements Robot {
 	}
 	
 	/**
-	 * Get the new absolute direction resulting in a specified
-	 * turn from the current absolute direction
-	 * @param turn a value of {@link Turn}
-	 * @return
-	 */
-	private CardinalDirection getNewDirection(Turn turn) {
-		int index = WestSouthEastNorth.indexOf(currentDirection);
-		int adjust;
-		
-		// array is arranged in left-to-right order
-		switch(turn) {
-			case LEFT: adjust=-1; break;
-			case RIGHT: adjust=1; break;
-			case AROUND: adjust=2; break;
-			default: return null;
-		}
-		
-		// use floorMod to prevent negative index
-		return WestSouthEastNorth.get(Math.floorMod(index+adjust,4));
-	}
-	
-	/**
 	 * Rotate the robot rightwards, adjusting required fields.
 	 * Cause a failure if energy is depleted.
 	 */
 	private void rotateRight() {
-		System.out.print("robot is rotating RIGHT: ");
+		if(VERBOSE) {
+			System.out.printf("robot is rotating RIGHT from %s: %s",currentDirection,obstacleDistancesForwardRightBackwardLeft);
+		}
 		
 		// moving right is aligned with moving forward in array
 		// which means: for what was right to become the new forward,
@@ -473,10 +435,13 @@ public class BasicRobot implements Robot {
 		
 		if(!attemptEnergyDepletion(energyUsedForRotation)) return;
 		
-		currentDirection=getNewDirection(Turn.RIGHT);
+		currentDirection=MazeMath.turnToCardinalDirection(Turn.RIGHT, getCurrentDirection());
 		control.keyDown(UserInput.Right, 0);
 		
 		assert control.getCurrentDirection()==currentDirection;
+		if(VERBOSE) {
+			System.out.printf(" --> %s, now facing %s\n",obstacleDistancesForwardRightBackwardLeft,currentDirection);
+		}
 	}
 	
 	/**
@@ -484,23 +449,30 @@ public class BasicRobot implements Robot {
 	 * Cause a failure if energy is depleted.
 	 */
 	private void rotateLeft() {
-		System.out.print("robot is rotating LEFT: ");
+		if(VERBOSE) {
+			System.out.printf("robot is rotating LEFT from %s: %s",currentDirection,obstacleDistancesForwardRightBackwardLeft);
+		}
 		
 		// opposite of right -- see `rotateRight` above for explanation
 		Collections.rotate(obstacleDistancesForwardRightBackwardLeft, 1);
 		
 		if(!attemptEnergyDepletion(energyUsedForRotation)) return;
 		
-		currentDirection=getNewDirection(Turn.LEFT);
+		currentDirection=MazeMath.turnToCardinalDirection(Turn.LEFT, getCurrentDirection());
 		control.keyDown(UserInput.Left, 0);
 		
 		assert control.getCurrentDirection()==currentDirection;
+		if(VERBOSE) {
+			System.out.printf(" --> %s, now facing %s\n",obstacleDistancesForwardRightBackwardLeft,currentDirection);
+		}
 	}
 	
 	@Override
 	public void rotate(Turn turn) {
 		if(hasStopped()) {
-			System.out.println("the robot has stopped; cannot perform rotate operation");
+			if(VERBOSE) {
+				System.out.println("the robot has stopped; cannot perform rotate operation");
+			}
 			return;
 		}
 		switch(turn) {
@@ -512,24 +484,31 @@ public class BasicRobot implements Robot {
 				break;
 			case AROUND:
 				// two rotations in same direction, which direction does not matter
-				System.out.println("robot is rotating AROUND: ");
+				if(VERBOSE) {
+					System.out.println("robot is rotating AROUND: ");
+				}
 				rotateLeft();
 				rotateLeft();
 				break;
+			default:
+				System.out.println("!   !   !   !   INVALID TURN VALUE SPECIFIED   !   !   !   !");
 		}
-		System.out.println(obstacleDistancesForwardRightBackwardLeft);
 	}
 
 	@Override
 	public void move(int distance, boolean manual){
 		if(distance<0) {
-			System.out.println("BasicRobot.move: cannot move negative distance");
+			if(VERBOSE) {
+				System.out.println("BasicRobot.move: cannot move negative distance");
+			}
 			return;
 		}
 		
 		for(int moveCount=0; moveCount<distance; moveCount++) {
 			if(hasStopped()) {
-				System.out.println("the robot has stopped; cannot perform move operation");
+				if(VERBOSE) {
+					System.out.println("the robot has stopped; cannot perform move operation");
+				}
 				return;
 			}
 			
@@ -549,7 +528,7 @@ public class BasicRobot implements Robot {
 		// currentDirection is a CardinalDirection
 		// so currentDirection.getDirection is the int[] array that
 		// corresponds to this direction
-		currentPosition=addArrays(currentPosition,currentDirection.getDirection());
+		currentPosition=MazeMath.addArrays(currentPosition,currentDirection.getDirection());
 	}
 	
 	/**
@@ -570,14 +549,18 @@ public class BasicRobot implements Robot {
 	private void moveSingle(boolean manual){
 		// TODO how to factor in manual parameter?
 		
-		System.out.printf("robot move: %s   -->   ",obstacleDistancesForwardRightBackwardLeft);
+		if(VERBOSE) {
+			System.out.printf("robot move: %s   -->   ",obstacleDistancesForwardRightBackwardLeft);
+		}
 			
 		// check energy before crash, because the robot cannot crash
 		// if it does not have energy to move in the first place
 		if(!attemptEnergyDepletion(energyUsedForMove)) return;
 		
 		if(atForwardWall()) {
-			System.out.println();
+			if(VERBOSE) {
+				System.out.println();
+			}
 			endGame(badMoveMessage);
 		}
 		else {
@@ -592,47 +575,42 @@ public class BasicRobot implements Robot {
 			//catch (Exception e) {return;}
 			
 			assert odometerReading*energyUsedForMove<=control.getEnergyConsumedByRobotAtPresent() :
-				"error: the robot cannot have used less energy than was required for odometer reading";
+				"error: the robot cannot have used less energy than was required for odometer reading: "
+				+"energy used at present is "+control.getEnergyConsumedByRobotAtPresent()+
+				" but lower bound is "+(odometerReading*energyUsedForMove)+
+				"; initial energy is "+initialEnergyLevel;
 			
 			
 			assert Arrays.equals(control.getCurrentPosition(), currentPosition);
-			System.out.printf("%s  - %s\n",obstacleDistancesForwardRightBackwardLeft,"moving as normal");
+			if(VERBOSE) {
+				System.out.printf("%s  - %s\n",obstacleDistancesForwardRightBackwardLeft,Arrays.toString(currentPosition));
+			}
+			//"moving as normal"
 		}
 	}
 	
-	/**
-	 * Convenience method to return the sum of two arrays of equal length.
-	 * 
-	 * @param a1 an array of type int[]
-	 * @param a2 an array of type int[]
-	 * @return a1+a2 as a new int[] array
-	 */
-	private static int[] addArrays(int[] a1, int[] a2) {
-		//cannot add if lengths are unequal
-		if(a1.length!=a2.length) return null;
-		
-		int[] result=new int[a1.length];
-		for(int i=0; i<a1.length; i++) result[i]=a1[i]+a2[i];
-		
-		return result;
-	}
-
 	@Override
 	public void jump() throws Exception {
 		if(hasStopped()) {
-			System.out.println("the robot has stopped; cannot perform jump operation");
+			if(VERBOSE) {
+				System.out.println("the robot has stopped; cannot perform jump operation");
+			}
 			return;
 		}
 		// TODO change position, account for possibility that jump was unnecessary and replace with walk operation
 		if(!atForwardWall()) {
 			//case where a jump is not required, a walk suffices
-			System.out.println("jump is not required: performing move operation");
+			if(VERBOSE) {
+				System.out.println("jump is not required: performing move operation");
+			}
 			move(1,control.manualRobotOperation);
 			// TODO 'manual' parameter in move--what is proper value?
 		}
 		else { // jump required
 			
-			System.out.println("performing jump operation");
+			if(VERBOSE) {
+				System.out.println("performing jump operation");
+			}
 			
 			// check if sufficient energy
 			if(!attemptEnergyDepletion(energyUsedForJump)) return;
@@ -671,7 +649,7 @@ public class BasicRobot implements Robot {
 	 */
 	private boolean atForwardWall() {
 		return 0==obstacleDistancesForwardRightBackwardLeft.get(
-			getDirectionIndex(Direction.FORWARD)
+			MazeMath.getDirectionIndex(Direction.FORWARD)
 		);
 	}
 	
@@ -681,9 +659,9 @@ public class BasicRobot implements Robot {
 	 */
 	private void calculateDistances(Direction... exclusions) {
 		List<Direction> exclude = Arrays.asList(exclusions);
-		for(Direction d: ForwardRightBackwardLeft) {
+		for(Direction d: MazeMath.ForwardRightBackwardLeft) {
 			if(exclude.contains(d)) {
-				System.out.println("calculateDistances: skipping "+d);
+				//System.out.println("calculateDistances: skipping "+d);
 				continue;
 			}
 			try {
@@ -726,17 +704,6 @@ public class BasicRobot implements Robot {
 		*/
 		
 		calculateDistances(Direction.FORWARD,Direction.BACKWARD);
-		/*
-		try {
-			calculateObstacleDistance(Direction.RIGHT);
-		} catch (Exception e) {
-			//e.printStackTrace();
-		}
-		try {
-			calculateObstacleDistance(Direction.LEFT);
-		} catch (Exception e) {
-			//e.printStackTrace();
-		}*/
 	}
 	
 	/**
@@ -791,7 +758,7 @@ public class BasicRobot implements Robot {
 		
 		
 		
-		CardinalDirection cd = translateDirectionToCardinalDirection(d);
+		CardinalDirection cd = translateCurrentDirectionToCardinalDirection(d);
 		int[] dir = cd.getDirection();
 		int dx = dir[0], dy = dir[1];
 		int[] pos = getCurrentPosition();
@@ -810,60 +777,43 @@ public class BasicRobot implements Robot {
 		
 		// pos is unchanged, so computing Manhattan distance
 		// between (x,y) and pos gives total distance covered
-		return Math.abs(x-pos[0]) + Math.abs(y-pos[1]);
+		return MazeMath.manhattanDistance(x, y, pos);
 	}
 	
 	/**
-	 * Translate relative direction to absolute direction.
+	 * Translate relative direction to absolute direction given knowledge
+	 * of how current direction relates to a forward direction.
 	 * @param d a value of {@link Direction}
 	 * @return {@link CardinalDirection} corresponding to input direction
 	 */
-	private CardinalDirection translateDirectionToCardinalDirection(Direction d) {
+	private CardinalDirection translateCurrentDirectionToCardinalDirection(Direction d) {
 		// calculate how far right d is from forward
 		// add this to the index of the absolute direction
 		// matching the forward direction
-		return WestSouthEastNorth.get(
-				(WestSouthEastNorth.indexOf(getCurrentDirection()) + getDirectionIndex(d))
-				%4);
+		return MazeMath.DirectionToCardinalDirection(d, getCurrentDirection());
 	}
 	
-	/**
-	 * Get the direction index of the input {@link Direction}
-	 * in the {@value #ForwardRightBackwardLeft} field.
-	 * @param d a value of {@link Direction}
-	 * @return the corresponding position of d in {@value #ForwardRightBackwardLeft}
-	 */
-	private int getDirectionIndex(Direction d) {
-		switch(d) {
-			case FORWARD:	return 0;
-			case RIGHT:		return 1;
-			case BACKWARD:	return 2;
-			case LEFT:		return 3;
-			
-			default:		return -1;
-		}
-		
-	}
+	
 	
 	
 	/*
 	
-	
 	//////////////// PLANNING FOR PROJECT 4 ////////////////
 	
+	//when ready to use, search through this document for comments including the string "Project 4"
 	
 	private boolean hasWallInDirection(Direction d) {
 		return floorplan.hasWall(
 				currentPosition[0],currentPosition[1],
-				translateDirectionToCardinalDirection(d));
+				translateCurrentDirectionToCardinalDirection(d));
 	}
 	
 	private int[] getCoordinateDelta(Direction d) {
-		return translateDirectionToCardinalDirection(d).getDirection();
+		return translateCurrentDirectionToCardinalDirection(d).getDirection();
 	}
 	
 	private int[] getNewCoordinateFromDirectionalMove(Direction d) {
-		return addArrays(currentPosition,getCoordinateDelta(d));
+		return MazeMath.addArrays(currentPosition,getCoordinateDelta(d));
 	}
 	
 	private List<Direction> getMoveableDirections() {
@@ -935,6 +885,7 @@ public class BasicRobot implements Robot {
 		}
 		return;
 	}
+	
 	*/
 
 }

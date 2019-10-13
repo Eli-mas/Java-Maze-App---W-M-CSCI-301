@@ -8,6 +8,7 @@ import java.awt.Graphics;
 import java.util.ArrayList;
 import java.util.Arrays;
 
+import comp.MazeMath;
 import generation.CardinalDirection;
 import generation.Floorplan;
 import generation.Maze;
@@ -243,7 +244,7 @@ public class StatePlaying extends DefaultState {
 	private ArrayList<Object> getRobotDistances() {
 		ArrayList<Object> d = new ArrayList<Object>(4);
 		int v;
-		for(Direction dir: BasicRobot.ForwardRightBackwardLeft) {
+		for(Direction dir: MazeMath.ForwardRightBackwardLeft) {
 			v=robot.distanceToObstacle(dir);
 			d.add(Integer.MAX_VALUE==v ? "inf" : v);
 		}
@@ -424,6 +425,10 @@ public class StatePlaying extends DefaultState {
 	 * Draws and waits. Used to obtain a smooth appearance for rotate and move operations
 	 */
 	private void slowedDownRedraw() {
+		if(null==panel) {
+			
+			return;
+		}
 		draw() ;
 		try {
 			Thread.sleep(25);
@@ -458,7 +463,7 @@ public class StatePlaying extends DefaultState {
 		
 		//if(1==dir) robot.rotate(Turn.LEFT);
 		//else if(-1==dir) robot.rotate(Turn.RIGHT);
-		if(robotEnabled) drawRobotMetrics(true);
+		if(null!=panel && robotEnabled) drawRobotMetrics(true);
 		
 		//logPosition(); // debugging
 	}
@@ -486,7 +491,7 @@ public class StatePlaying extends DefaultState {
 		
 		// move the robot
 		//robot.move(dir, control.manualRobotOperation);
-		if(robotEnabled) drawRobotMetrics(true);
+		if(null!=panel && robotEnabled) drawRobotMetrics(true);
 		
 		//logPosition(); // debugging
 	}

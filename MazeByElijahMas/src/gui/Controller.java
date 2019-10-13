@@ -182,11 +182,11 @@ public class Controller {
 	public void switchFromGeneratingToPlaying(Maze config) {
 		currentState = states[2];
 		currentState.setMazeConfiguration(config);
-		System.out.println("Controller: calling robot.setMaze");
+		//System.out.println("Controller: calling robot.setMaze");
 		
 		
 		if(robotEnabled){
-			System.out.println("Controller: initializing the robot");
+			//System.out.println("Controller: initializing the robot");
 			Robot new_robot = new BasicRobot();
 			setRobotAndDriver(new_robot,null);
 			//setupRobot()
@@ -203,7 +203,7 @@ public class Controller {
 	protected void setupRobot() {
 		robot.setMaze(this);
 		initialRobotEnergyLevel=robot.getBatteryLevel();
-		System.out.println("initialRobotEnergyLevel="+initialRobotEnergyLevel);
+		//System.out.println("initialRobotEnergyLevel="+initialRobotEnergyLevel);
 	}
 	
 	/**

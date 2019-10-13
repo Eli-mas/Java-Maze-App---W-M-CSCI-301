@@ -53,6 +53,7 @@ public interface Robot {
 	 * Left is 90 degrees left, right is 90 degrees right, turn around is 180 degrees.
 	 */
 	public enum Turn { LEFT, RIGHT, AROUND };
+	
 	/**
 	 * Describes all possible directions from the point of view of the robot,
 	 * i.e., relative to its current forward position.
@@ -60,6 +61,7 @@ public interface Robot {
 	 * and cardinal directions in terms of north, south, east, west.
 	 */
 	public enum Direction { LEFT, RIGHT, FORWARD, BACKWARD };
+	
 	/**
 	 * Provides the current position as (x,y) coordinates for the maze cell as an array of length 2 with [x,y].
 	 * @postcondition 0 <= x < width, 0 <= y < height of the maze. 
@@ -67,11 +69,13 @@ public interface Robot {
 	 * @throws Exception if position is outside of the maze
 	 */
 	int[] getCurrentPosition() throws Exception;
+	
 	/**
 	 * Provides the current cardinal direction.
 	 * @return cardinal direction is robot's current direction in absolute terms
 	 */	
 	CardinalDirection getCurrentDirection();
+	
 	/**
 	 * Provides the robot with a reference to the controller to cooperate with.
 	 * The robot memorizes the controller such that this method is most likely called only once
@@ -82,6 +86,7 @@ public interface Robot {
 	 * @precondition controller != null, controller is in playing state and has a maze
 	 */
 	void setMaze(Controller controller) ;	
+	
 	/**
 	 * Returns the current battery level.
 	 * The robot has a given battery level (energy level) 
@@ -92,6 +97,7 @@ public interface Robot {
 	 * @return current battery level, level is > 0 if operational. 
 	 */
 	float getBatteryLevel() ;
+	
 	/**
 	 * Sets the current battery level.
 	 * The robot has a given battery level (energy level) 
@@ -103,6 +109,7 @@ public interface Robot {
 	 * @precondition level >= 0 
 	 */
 	void setBatteryLevel(float level) ;
+	
 	/** 
 	 * Gets the distance traveled by the robot.
 	 * The robot has an odometer that calculates the distance the robot has moved.
@@ -113,6 +120,7 @@ public interface Robot {
 	 * @return the distance traveled measured in single-cell steps forward
 	 */
 	int getOdometerReading();
+	
 	/** 
      * Resets the odomoter counter to zero.
      * The robot has an odometer that calculates the distance the robot has moved.
@@ -121,12 +129,14 @@ public interface Robot {
      * The odometer reading gives the path length if its setting is 0 at the start of the game.
      */
 	void resetOdometer();
+	
 	/**
 	 * Gives the energy consumption for a full 360 degree rotation.
 	 * Scaling by other degrees approximates the corresponding consumption. 
 	 * @return energy for a full rotation
 	 */
 	float getEnergyForFullRotation() ;
+	
 	/**
 	 * Gives the energy consumption for moving forward for a distance of 1 step.
 	 * For simplicity, we assume that this equals the energy necessary 
@@ -135,15 +145,20 @@ public interface Robot {
 	 * @return energy for a single step forward
 	 */
 	float getEnergyForStepForward() ;
+	
+	
 	///////////////////////////////////////////////////////////////////
 	/////////////////// Sensors   /////////////////////////////////////
 	///////////////////////////////////////////////////////////////////
+	
+	
 	/**
 	 * Tells if current position (x,y) is right at the exit but still inside the maze. 
 	 * Used to recognize termination of a search.
 	 * @return true if robot is at the exit, false otherwise
 	 */
 	boolean isAtExit() ;
+	
 	/**
 	 * Tells if a sensor can identify the exit in the given direction relative to 
 	 * the robot's current forward direction from the current position.
@@ -151,21 +166,25 @@ public interface Robot {
 	 * @throws UnsupportedOperationException if robot has no sensor in this direction
 	 */
 	boolean canSeeThroughTheExitIntoEternity(Direction direction) throws UnsupportedOperationException ;
+	
 	/**
 	 * Tells if current position is inside a room. 
 	 * @return true if robot is inside a room, false otherwise
 	 * @throws UnsupportedOperationException if not supported by robot
 	 */	
 	boolean isInsideRoom() throws UnsupportedOperationException ;
+	
 	/**
 	 * Tells if the robot has a room sensor.
 	 */
 	boolean hasRoomSensor() ;
+	
 	/**
 	 * Tells if the robot has stopped for reasons like lack of energy, hitting an obstacle, etc.
 	 * @return true if the robot has stopped, false otherwise
 	 */
 	boolean hasStopped() ;
+	
 	/**
 	 * Tells the distance to an obstacle (a wall) 
 	 * in the given direction.
@@ -181,6 +200,7 @@ public interface Robot {
 	 * an operational sensor for this direction
 	 */
 	int distanceToObstacle(Direction direction) throws UnsupportedOperationException ;
+	
 	/**
 	 * Tells if the robot has an operational distance sensor for the given direction.
 	 * The interface is generic and may be implemented with robots 
@@ -193,6 +213,7 @@ public interface Robot {
 	 * @return true if robot has operational sensor, false otherwise
 	 */
 	boolean hasOperationalSensor(Direction direction) ;
+	
 	/**
 	 * Makes the robot's distance sensor for the given direction fail.
 	 * Subsequent calls to measure the distance to an obstacle in 
@@ -204,6 +225,7 @@ public interface Robot {
 	 * @param direction specifies the direction of the sensor
 	 */
 	void triggerSensorFailure(Direction direction) ;
+	
 	/**
 	 * Makes the robot's distance sensor for the given direction
 	 * operational again. 
@@ -216,9 +238,13 @@ public interface Robot {
 	 * @return true if robot has operational sensor, false otherwise
 	 */
 	boolean repairFailedSensor(Direction direction) ;
+	
+	
 	///////////////////////////////////////////////////////////////////
 	/////////////////// Actuators /////////////////////////////////////
 	///////////////////////////////////////////////////////////////////
+	
+	
 	/**
 	 * Turn robot on the spot for amount of degrees. 
 	 * If robot runs out of energy, it stops, 
@@ -226,6 +252,7 @@ public interface Robot {
 	 * @param direction to turn and relative to current forward direction. 
 	 */
 	void rotate(Turn turn);
+	
 	/**
 	 * Moves robot forward a given number of steps. A step matches a single cell.
 	 * If the robot runs out of energy somewhere on its way, it stops, 
@@ -243,6 +270,7 @@ public interface Robot {
 	 * @precondition distance >= 0
 	 */
 	void move(int distance, boolean manual);
+	
 	/**
 	 * Makes robot move in a forward direction even if there is a wall
 	 * in front of it. In this sense, the robot jumps over the wall
