@@ -10,6 +10,7 @@ import generation.Maze;
 import generation.Floorplan;
 import generation.Distance;
 import gui.Robot.Direction;
+import comp.ExtendedList;
 
 /**
  * 
@@ -26,15 +27,30 @@ import gui.Robot.Direction;
 public class MazeMath {
 
 	/**
+	 * <p> ArrayList that enumerates cardinal directions
+	 * in order of rotating rightwards, starting at West. </p>
+	 * 
+	 * <p> Instantiated as a list rather than an array
+	 * to utilize the List.{@link List#indexOf(Object) indexOf} method. </p>
+	 */
+	public static final ExtendedList<CardinalDirection> WestSouthEastNorth =
+		ExtendedList.from(
+			CardinalDirection.West,
+			CardinalDirection.South,
+			CardinalDirection.East,
+			CardinalDirection.North
+		)
+	;
+
+	/**
 	 * <p> The four values of {@link Direction}
 	 * starting at forward and rotating rightward. </p>
 	 * 
 	 * <p> Maintained as a separate array from {@code Direction.values()}
 	 * so as to not rely on the order of elements in {@code Direction}. </p>
 	 */
-	public static final List<Direction> ForwardRightBackwardLeft = Arrays.asList(
-		Direction.FORWARD, Direction.RIGHT, Direction.BACKWARD, Direction.LEFT
-	);
+	public static final ExtendedList<Direction> ForwardRightBackwardLeft =
+		ExtendedList.from(Direction.FORWARD, Direction.RIGHT, Direction.BACKWARD, Direction.LEFT);
 
 	/**
 	 * Return the sum of two arrays of equal length.
@@ -99,44 +115,31 @@ public class MazeMath {
 	 * @return {@link CardinalDirection} corresponding to input direction
 	 */
 	public static CardinalDirection DirectionToCardinalDirection(Direction d, CardinalDirection currentDirection) {
-		// calculate how far right d is from forward
-		// add this to the index of the absolute direction
-		// matching the forward direction
-		return WestSouthEastNorth.get(
+		// because of the parallelism between WestSouthEastNorth and ForwardRightBackwardLeft,
+		// the distance between d and forward must be the same between
+		// the target CardinalDirection and the current CardinalDirection
+		return WestSouthEastNorth.getFrom(currentDirection, getDirectionIndex(d)
+				/*get(
 				(
 					WestSouthEastNorth.indexOf(currentDirection) + getDirectionIndex(d)
 				)
-				%4);
+				%4*/
+			);
 	}
 	
 	public static Direction CardinalDirectionToDirection(CardinalDirection input, CardinalDirection currentDirection) {
 		// get the rotational difference from currentDirection to input,
-		// then move this distance in ForwardRightBackwardLeft
-		// and return the result
+		// then move this distance in ForwardRightBackwardLeft and return the result
 		// difference of 0 means input = currentDirection
+		
 		return ForwardRightBackwardLeft.get(
-				Math.floorMod(
+				WestSouthEastNorth.getDistanceFromToMod(currentDirection, input)
+		/*		Math.floorMod(
 					WestSouthEastNorth.indexOf(input)
 					- WestSouthEastNorth.indexOf(currentDirection)
-				, 4))
-		;
+				, 4)*/
+		);
 	}
-
-	/**
-	 * <p> ArrayList that enumerates cardinal directions
-	 * in order of rotating rightwards, starting at West. </p>
-	 * 
-	 * <p> Instantiated as a list rather than an array
-	 * to utilize the List.{@link List#indexOf(Object) indexOf} method. </p>
-	 */
-	public static final List<CardinalDirection> WestSouthEastNorth =
-		(List<CardinalDirection>)Arrays.asList(
-			CardinalDirection.West,
-			CardinalDirection.South,
-			CardinalDirection.East,
-			CardinalDirection.North
-		)
-	;
 
 	/**
 	 * Get the new absolute direction resulting in a specified
@@ -164,7 +167,7 @@ public class MazeMath {
 	
 	public static Turn directionToTurn(Direction d) {
 		switch(d) {
-			case FORWARD: return null;
+			//case FORWARD: return null;
 			case BACKWARD: return Turn.AROUND;
 			case LEFT: return Turn.LEFT;
 			case RIGHT: return Turn.RIGHT;

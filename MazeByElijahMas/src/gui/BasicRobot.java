@@ -109,17 +109,17 @@ public class BasicRobot implements Robot {
 	/**
 	 * failure message when the robot tries to jump out of the maze
 	 */
-	private static final String badJumpMessage="robot tried bad jump";
+	public static final String badJumpMessage="robot tried bad jump";
 	
 	/**
 	 * failure message when the robot crashes into a wall
 	 */
-	private static final String badMoveMessage="robot crashed";
+	public static final String badMoveMessage="robot crashed";
 	
 	/**
 	 * failure message when the robot runs out of battery
 	 */
-	private static final String noEnergyMessage="robot out of energy";
+	public static final String noEnergyMessage="robot out of energy";
 	
 	/**
 	 * initial battery level before robot begins activity;
@@ -129,7 +129,11 @@ public class BasicRobot implements Robot {
 	
 	//private int[][] visitCounts; //prospective for Project 4
 	
-	public static boolean VERBOSE;
+	/**
+	 * allows for printing information about robot while operating;
+	 * disabled during testing.
+	 */
+	public static boolean VERBOSE=true;
 	
 	
 	//private static HashMap<Integer,Direction> create_obstacleDistancesIndices(){
@@ -247,7 +251,7 @@ public class BasicRobot implements Robot {
 		distance=maze.getMazedists();
 		//dists=distance.getAllDistanceValues();
 		stopped=false;
-		VERBOSE=true;
+		//VERBOSE=true;
 		
 		currentPosition = control.getCurrentPosition();
 		currentDirection = control.getCurrentDirection();
@@ -262,6 +266,7 @@ public class BasicRobot implements Robot {
 		initialized=true;
 		//System.out.println("BasicRobot: instantiateFields completed");
 		//System.out.printf("BasicRobot: maze dimensions: %d,%d\n",width,height);
+		//System.out.println("BasicRobot: maze exit: "+Arrays.toString(distance.getExitPosition()));
 		
 		/*
 		//prospective for Project 4
@@ -475,12 +480,15 @@ public class BasicRobot implements Robot {
 			}
 			return;
 		}
+		Float expectedEnergyDifference, energyBeforeRotation = getBatteryLevel();
 		switch(turn) {
 			case RIGHT:
 				rotateRight();
+				expectedEnergyDifference=energyUsedForRotation;
 				break;
 			case LEFT:
 				rotateLeft();
+				expectedEnergyDifference=energyUsedForRotation;
 				break;
 			case AROUND:
 				// two rotations in same direction, which direction does not matter
@@ -489,10 +497,17 @@ public class BasicRobot implements Robot {
 				}
 				rotateLeft();
 				rotateLeft();
+				expectedEnergyDifference=2*energyUsedForRotation;
 				break;
 			default:
 				System.out.println("!   !   !   !   INVALID TURN VALUE SPECIFIED   !   !   !   !");
+				expectedEnergyDifference=null;
 		}
+		
+		assert energyBeforeRotation-getBatteryLevel() == expectedEnergyDifference :
+			"energy difference before/after rotation: "+
+			(energyBeforeRotation-getBatteryLevel())+
+			", exepcted: "+expectedEnergyDifference;
 	}
 
 	@Override
@@ -512,12 +527,33 @@ public class BasicRobot implements Robot {
 				return;
 			}
 			
+			float energyBeforeMove=getBatteryLevel();
+			
 			moveSingle(manual);
+			
+			float energyAfterMove=getBatteryLevel();
+			
+			// if robot has stopped, no reason to check energies below, as calculations stop
+			if(hasStopped()) return;
+			
+			// branch on whether we have left the maze
 			try {
-				getCurrentPosition();
+				getCurrentPosition(); //throws exception if out of maze
+				
 				//incrementVisitCount(currentPosition); //prospective for Project 4
+				
+				//energy used should be sum of move energy + sensing energy for both side sensors
+				assert (energyBeforeMove-energyAfterMove)==energyUsedForMove + 2*energyUsedForDistanceSensing:
+					energyBeforeMove+", "+energyAfterMove+" at "+Arrays.toString(currentPosition);
 			}
-			catch (Exception e) {return;}
+			catch (Exception e) {
+				// we get here if the robot moves out of the maze
+				// if the robot is outside the maze, there is no reason to calculate distances
+				// so the only energy used is that of the move
+				assert (energyBeforeMove-energyAfterMove)==energyUsedForMove:
+					energyBeforeMove+", "+energyAfterMove+" at "+Arrays.toString(currentPosition);
+				
+				return;}
 		}
 	}
 	
@@ -571,6 +607,7 @@ public class BasicRobot implements Robot {
 			if(hasStopped()) return;
 			
 			control.keyDown(UserInput.Up, 0);
+			//System.out.println("moveSingle: currentPosition="+Arrays.toString(currentPosition));
 			//try {getCurrentPosition();}
 			//catch (Exception e) {return;}
 			
@@ -608,6 +645,8 @@ public class BasicRobot implements Robot {
 		}
 		else { // jump required
 			
+			float energyBeforeJump = getBatteryLevel();
+			
 			if(VERBOSE) {
 				System.out.println("performing jump operation");
 			}
@@ -633,6 +672,11 @@ public class BasicRobot implements Robot {
 				control.keyDown(UserInput.Jump, 0);
 				
 				assert Arrays.equals(control.getCurrentPosition(), currentPosition);
+				
+				assert getBatteryLevel()==energyBeforeJump-(energyUsedForJump+3*energyUsedForDistanceSensing):
+					"energy difference before/after rotation: "+
+					(energyBeforeJump-getBatteryLevel())+
+					", exepcted: "+(energyUsedForJump+3*energyUsedForDistanceSensing);
 			}
 			catch (Exception e) {endGame(badJumpMessage);}
 		}
@@ -667,8 +711,9 @@ public class BasicRobot implements Robot {
 			try {
 				calculateObstacleDistance(d);
 			} catch (Exception e) {
+				// System.out.println("cannot calculate distance in direction "+d);
 				// e.printStackTrace();
-				// System.out.println(e.getMessage());
+				// System.out.println(e.getMessage()+"-->\n   "+e.getCause().getMessage());
 			}
 		}
 	}
@@ -702,8 +747,12 @@ public class BasicRobot implements Robot {
 		
 		//if(canSeeThroughTheExitIntoEternity(Direction.FORWARD)) return;
 		*/
-		
-		calculateDistances(Direction.FORWARD,Direction.BACKWARD);
+		try{
+			getCurrentPosition();
+			calculateDistances(Direction.FORWARD,Direction.BACKWARD);
+		} catch(Exception e) {
+			return;
+		}
 	}
 	
 	/**
