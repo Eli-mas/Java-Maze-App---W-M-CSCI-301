@@ -103,6 +103,7 @@ public class Controller {
 	 * suppress certain warnings from printing, used for testing
 	 */
 	public static boolean suppressWarnings=false;
+	public static boolean suppressUpdates=false;
 	
 	public Controller() {
 		init(false);
@@ -202,12 +203,22 @@ public class Controller {
 	}
 	
 	/**
+	 * Set the initial robot energy level.
+	 * Call this only before the robot starts operations.
+	 * @param amount
+	 */
+	public void setInitialRobotEnergyLevel(float amount) {
+		initialRobotEnergyLevel=amount;
+		robot.setBatteryLevel(amount);
+	}
+	
+	/**
 	 * Sets the robot up. Called in StatePlaying when
 	 * current position and direction have been initialized.
 	 */
 	protected void setupRobot() {
 		robot.setMaze(this);
-		initialRobotEnergyLevel=robot.getBatteryLevel();
+		setInitialRobotEnergyLevel(robot.getBatteryLevel());
 		//System.out.println("initialRobotEnergyLevel="+initialRobotEnergyLevel);
 	}
 	

@@ -2,6 +2,7 @@ package generation;
 
 import generation.Factory;
 import generation.Order;
+import gui.Controller;
 
 
 /**
@@ -104,7 +105,7 @@ public class MazeFactory implements Factory {
 	private void buildOrder() { 
 		if (null == builder)
 			return;
-		System.out.println("MazeFactory.buildOrder: started") ;
+		if(!Controller.suppressUpdates) System.out.println("MazeFactory.buildOrder: started") ;
 		builder.buildOrder(currentOrder);
 		buildThread = new Thread(builder);
 		buildThread.start();

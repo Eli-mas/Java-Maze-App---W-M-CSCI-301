@@ -1,10 +1,12 @@
-/**
+
+	/**
  * 
  */
 package generation;
 
 
-/**
+
+	/**
  * A Maze encapsulates all relevant information about a maze 
  * that can be explored in a game. 
  * A maze has finite dimensions width and height.
@@ -18,26 +20,31 @@ package generation;
  *
  */
 public interface Maze {
+	
 	/**
 	 * Set the width of the maze.
 	 * @param width is greater or equal zero.
 	 */
 	void setWidth(int width);
+	
 	/**
 	 * Set the height of the maze.
 	 * @param height is greater or equal zero.
 	 */
 	void setHeight(int height);
+	
 	/**
 	 * Get the height of the maze.
 	 * @return the height 
 	 */
 	int getHeight();
+	
 	/**
 	 * Get the width of the maze.
 	 * @return the width 
 	 */
 	int getWidth();
+	
 	
 	/**
 	 * Gets the floorplan which describes where wallboards are in the current maze.
@@ -45,12 +52,14 @@ public interface Maze {
 	 */
 	Floorplan getFloorplan();
 
+	
 	/**
 	 * Sets the floorplan which describe where wallboards are in the current maze.
 	 * @param floorplan the floorplan to set
 	 */
 	void setFloorplan(Floorplan floorplan);
 
+	
 	/**
 	 * Gets a distance object for this maze to describe 
 	 * for each position how many steps it is towards the exit.
@@ -58,6 +67,7 @@ public interface Maze {
 	 */
 	Distance getMazedists();
 
+	
 	/**
 	 * Sets the distance values towards the exit for this maze.
 	 * Note that the dimensions of the distance matrix needs to match 
@@ -66,6 +76,7 @@ public interface Maze {
 	 */
 	void setMazedists(Distance mazedists) ;
 
+	
 	/**
 	 * Gets access to a tree of nodes for segments of wallboards which is
 	 * used for drawing the currently visible part.
@@ -73,11 +84,13 @@ public interface Maze {
 	 */
 	BSPNode getRootnode();
 
+	
 	/**
 	 * Sets the tree of nodes for segments of wallboards.
 	 * @param rootnode the rootnode to set
 	 */
 	void setRootnode(BSPNode rootnode);
+	
 	/**
 	 * Tells if (x,y) coordinate is within range.
 	 * @param x is on the horizontal axis
@@ -85,6 +98,14 @@ public interface Maze {
 	 * @return true if {@code 0 <= x < width, 0 <= y < height}
 	 */
 	boolean isValidPosition(int x, int y);
+	
+	/**
+	 * Should wrap around {@link #isValidPosition(int, int)} in implementation.
+	 * @param xy
+	 * @return
+	 */
+	boolean isValidPosition(int[] xy);
+	
 	/**
 	 * Tells how many steps it is from the given (x,y) coordinate
 	 * to the exit position. 
@@ -93,6 +114,7 @@ public interface Maze {
 	 * @return the length of path to the exit
 	 */
 	int getDistanceToExit(int x, int y);
+	
 	/**
 	 * Tells if one faces a wallboard at position (x,y) looking into the 
 	 * given direction. Note that the cardinal direction is absolute
@@ -103,6 +125,7 @@ public interface Maze {
 	 * @return true if (x,y) is valid and there is a wallboard in the given direction, false otherwise
 	 */
 	public boolean hasWall(int x, int y, CardinalDirection dir) ;
+	
 	/**
 	 * Provides coordinates of a position adjacent to the given (x,y)
 	 * position that has a distance to the exit that is less than
@@ -114,6 +137,7 @@ public interface Maze {
 	 * @return int array of length 2 with (x',y') coordinates for neighbor
 	 */
 	public int[] getNeighborCloserToExit(int x, int y);
+	
 	/**
 	 * Provides coordinates (x,y) of the starting position for this maze.
 	 * Maze generation algorithms are expected to use the position
@@ -121,6 +145,7 @@ public interface Maze {
 	 * i.e., the one with the maximum distance.
 	 */	
 	public int[] getStartingPosition();
+	
 	/**
 	 * Sets coordinates (x,y) of the starting position for this maze.
 	 * Maze generation algorithms are expected to use the position

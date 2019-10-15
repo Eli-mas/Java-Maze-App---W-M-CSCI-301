@@ -101,7 +101,7 @@ public class OrderStub extends DefaultState implements Order{
 	 */
 	@Override
 	public void updateProgress(int percentage) {
-		if (this.percentdone < percentage && percentage < 100) {
+		if ((!Controller.suppressUpdates) && this.percentdone < percentage && percentage < 100) {
 			this.percentdone = percentage;
 			if(percentage>updatePrintThreshold) {
 				System.out.print(percentage+"  ");

@@ -376,6 +376,16 @@ public class Floorplan {
 	public boolean isInRoom(int x, int y) {
 		return hasMaskedBitsTrue(x, y, CW_IN_ROOM);
 	}
+	
+	/**
+	 * Wrapper around {@link #isInRoom(int, int)}.
+	 * @param xy int[]{x,y}
+	 * @return whether cell is in room
+	 */
+	public boolean isInRoom(int[] xy) {
+		return isInRoom(xy[0],xy[1]);
+	}
+	
 	/**
 	 * Checks if there is a cell in the given area that belongs to a room.
 	 * The first corner (rx,ry) is at the upper left position, the second corner (rxl,ryl) is at the lower right position.

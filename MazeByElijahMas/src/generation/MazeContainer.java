@@ -159,6 +159,7 @@ public class MazeContainer implements Maze {
 	public void setRootnode(BSPNode rootnode) {
 		this.rootnode = rootnode;
 	}
+	
 	/**
 	 * Tells if given (x,y) position is valid, i.e. within legal range of values
 	 * @param x is on the horizontal axis 
@@ -168,6 +169,16 @@ public class MazeContainer implements Maze {
 	public boolean isValidPosition(int x, int y) {
 		return ((0 <= x && x < width) && (0 <= y && y < height));
 	}
+	
+	/**
+	 * Wrapper around {@link #isValidPosition(int, int)}
+	 * 
+	 * @param xy int[]{x,y} values
+	 */
+	public boolean isValidPosition(int[] xy) {
+		return isValidPosition(xy[0],xy[1]);
+	}
+	
 	/**
 	 * Gives the number of steps or moves needed to get to the exit.
 	 * @param x is on the horizontal axis, {@code 0 <= x < width}
@@ -179,6 +190,7 @@ public class MazeContainer implements Maze {
 			"accessing content before object is fully initialized!";
 		return mazedists.getDistanceValue(x, y) ;
 	}
+	
 	/**
 	 * Tells if at position (x,y) and looking into given direction faces a wallboard.
 	 * @param x is on the horizontal axis, {@code 0 <= x < width}

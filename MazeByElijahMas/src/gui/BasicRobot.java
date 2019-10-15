@@ -1,7 +1,5 @@
 package gui;
 
-import static org.junit.jupiter.api.DynamicTest.stream;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -125,7 +123,7 @@ public class BasicRobot implements Robot {
 	 * initial battery level before robot begins activity;
 	 * public so that it can be modified during testing.
 	 */
-	public static float initialEnergyLevel=3000f;
+	public float initialEnergyLevel=3000f;
 	
 	//private int[][] visitCounts; //prospective for Project 4
 	
@@ -227,6 +225,10 @@ public class BasicRobot implements Robot {
 	 * at appropriate time from within {@link Controller}.
 	 */
 	public BasicRobot() {}
+	
+	public void initializeEnergy(float amount) {
+		initialEnergyLevel=amount;
+	}
 	
 	/**
 	 * Instantiate all the fields of the robot that depend on the maze.
@@ -350,7 +352,7 @@ public class BasicRobot implements Robot {
 		try {
 			int[] pos;
 			pos = getCurrentPosition(); // possible Exception
-			return floorplan.isInRoom(pos[0], pos[1]);
+			return floorplan.isInRoom(pos);
 		} catch (Exception e) {
 			//e.printStackTrace();
 			//return false;
@@ -373,8 +375,9 @@ public class BasicRobot implements Robot {
 		// obstacleDistancesForwardRightBackwardLeft is updated when operations are performed
 		int distance=obstacleDistancesForwardRightBackwardLeft.get(MazeMath.getDirectionIndex(direction));
 		
-		if(-1==distance) // this should not throw an exception, but to satisfy compiler
-			try {
+		// if distance is missing, fill it
+		if(-1==distance) 
+			try {// this should not throw an exception, but to satisfy compiler
 				distance=calculateObstacleDistance(direction);
 			} catch (Exception e) {
 				System.out.println("second exception in distanceToObstacle: "+e.getMessage());
@@ -432,6 +435,13 @@ public class BasicRobot implements Robot {
 		// has to have a sensor
 		if(!hasDirectionalSensor(direction)) return false;
 		sensorFunctionalFlags.put(direction,true);
+		
+		// now get the distance that was missing
+		try {
+			calculateObstacleDistance(direction);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
 		return true;
 	}
 	
@@ -625,6 +635,7 @@ public class BasicRobot implements Robot {
 			//no crash here
 			incrementCurrentPosition();
 			odometerReading++;
+			//System.out.printf("odometer, energy, used: %d, %.1f, %.1f\n",getOdometerReading(),getBatteryLevel(),control.getEnergyConsumedByRobotAtPresent());
 			changeDistancesInMoveForward();
 			if(hasStopped()) return;
 			
@@ -637,7 +648,7 @@ public class BasicRobot implements Robot {
 				"error: the robot cannot have used less energy than was required for odometer reading: "
 				+"energy used at present is "+control.getEnergyConsumedByRobotAtPresent()+
 				" but lower bound is "+(odometerReading*energyUsedForMove)+
-				"; initial energy is "+initialEnergyLevel;
+				"; initial energy is "+initialEnergyLevel+" odometer: "+getOdometerReading();
 			
 			
 			assert Arrays.equals(control.getCurrentPosition(), currentPosition);
@@ -738,11 +749,16 @@ public class BasicRobot implements Robot {
 			try {
 				calculateObstacleDistance(d);
 			} catch (Exception e) {
+				setDistance(d,-1);
 				// System.out.println("cannot calculate distance in direction "+d);
 				// e.printStackTrace();
 				// System.out.println(e.getMessage()+"-->\n   "+e.getCause().getMessage());
 			}
 		}
+	}
+	
+	private void setDistance(Direction d, int value) {
+		obstacleDistancesForwardRightBackwardLeft.set(MazeMath.getDirectionIndex(d),value);
 	}
 	
 	/**
@@ -763,8 +779,8 @@ public class BasicRobot implements Robot {
 		 * if looking through the exit,
 		 * we can't shift the infinity value
 		*/
-		if(Integer.MAX_VALUE!=dForward) obstacleDistancesForwardRightBackwardLeft.set(0,dForward-1);
-		if(Integer.MAX_VALUE!=dBackward) obstacleDistancesForwardRightBackwardLeft.set(2,dBackward+1);
+		if(Integer.MAX_VALUE!=dForward) setDistance(Direction.FORWARD, dForward-1);//obstacleDistancesForwardRightBackwardLeft.set(0,dForward-1);
+		if(Integer.MAX_VALUE!=dBackward) setDistance(Direction.BACKWARD, dBackward+1);obstacleDistancesForwardRightBackwardLeft.set(2,dBackward+1);
 		
 		/*
 		 * possible optimization:
@@ -894,7 +910,7 @@ public class BasicRobot implements Robot {
 	
 	private List<Direction> getMoveableDirections() {
 		ArrayList<Direction> moveableDirections = new ArrayList<Direction>(4);
-		for(Direction d: Direction.values()) {
+		for(Direction d: MazeMath.ForwardRightBackwardLeft) {
 			if(!hasWallInDirection(d)) moveableDirections.add(d);
 		}
 		moveableDirections.trimToSize();
@@ -941,7 +957,7 @@ public class BasicRobot implements Robot {
 	}
 	
 	private Direction directionToExit() {
-		for(Direction d: Direction.values()) {
+		for(Direction d: MazeMath.ForwardRightBackwardLeft) {
 			if(canSeeThroughTheExitIntoEternity(d)) return d;
 		}
 		return null;

@@ -88,9 +88,9 @@ public class MazeMath {
 
 	/**
 	 * Get the direction index of the input {@link Direction}
-	 * in the {@value MazeMath#ForwardRightBackwardLeft} field.
+	 * in the {@value #ForwardRightBackwardLeft} field.
 	 * @param d a value of {@link Direction}
-	 * @return the corresponding position of d in {@value MazeMath#ForwardRightBackwardLeft}
+	 * @return the corresponding position of d in {@value #ForwardRightBackwardLeft}
 	 */
 	public static int getDirectionIndex(Direction d) {
 		/*switch(d) {
@@ -198,9 +198,17 @@ public class MazeMath {
 	 * @return the direction resulting from the specified turn
 	 */
 	public static Direction directionToDirection(Direction d, Turn turn) {
-		return ForwardRightBackwardLeft.getFrom(d, -MazeMath.getTurnIndex(turn));
+		return ForwardRightBackwardLeft.getFrom(d, -getTurnIndex(turn));
 	}
 	
+	/**
+	 * The index of a turn is the distance one would have to move
+	 * from the current location in a right-moving ordered array
+	 * to reach the location specified by the turn
+	 * 
+	 * @param t a {@link Turn} value
+	 * @return index of the turn
+	 */
 	public static int getTurnIndex(Turn t) {
 		switch(t) {
 			case LEFT: return -1;
@@ -208,6 +216,28 @@ public class MazeMath {
 			case AROUND: return 2;
 			default: return 0;
 		}
+	}
+	
+	public static boolean[] booleanMask(int[] a) {
+		boolean[] b = new boolean[a.length];
+		for(int i=0; i<a.length; i++) b[i]=(0!=a[i]);
+		return b;
+	}
+	
+	public static Direction getFrom(Direction source, int distanceFrom) {
+		return ForwardRightBackwardLeft.getFrom(source, distanceFrom);
+	}
+	
+	public static CardinalDirection getFrom(CardinalDirection source, int distanceFrom) {
+		return WestSouthEastNorth.getFrom(source, distanceFrom);
+	}
+	
+	public static Direction getFrom(Direction source, Turn turn) {
+		return ForwardRightBackwardLeft.getFrom(source, getTurnIndex(turn));
+	}
+	
+	public static CardinalDirection getFrom(CardinalDirection source, Turn turn) {
+		return WestSouthEastNorth.getFrom(source, getTurnIndex(turn));
 	}
 	
 	/**

@@ -5,6 +5,7 @@ import static org.junit.Assert.*;
 import java.awt.event.KeyEvent;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -49,19 +50,23 @@ public class BasicRobotTest {
 	/**
 	 * Build a new maze at a given level to be used for testing
 	 * and establish the controller that will operate on it.
+	 * Maze generation is random, rooms are permissible by way
+	 * of the {@code perfect} parameter.
 	 * 
 	 * @param level level of the maze to be generated
+	 * @param perfect whether or not the maze should be perfect
 	 */
-	private void instantiateApplication(int level) {
+	private void instantiateApplication(int level, boolean perfect) {
 		// we don't want energy running out when not commanded explicitly
 		// but if we make this value too large,
 		// we will encounter precision-related errors
 		Controller.suppressWarnings=true;
-		BasicRobot.initialEnergyLevel=100000;
+		Controller.suppressUpdates=true;
 		
 		BasicRobot.VERBOSE=false;
 		control=getController(false, false, level);
 		robot=(BasicRobot)control.getRobot();
+		control.setInitialRobotEnergyLevel(100000);
 		
 		maze=control.getMazeConfiguration();
 		floorplan=maze.getFloorplan();
@@ -76,9 +81,10 @@ public class BasicRobotTest {
 	 * a path out of this maze for testing purposes.
 	 * 
 	 * @param level level of the maze to be generated
+	 * @param perfect whether or not the maze should be perfect
 	 */
-	public void buildNewMaze(int level) {
-		instantiateApplication(level);
+	public void buildNewMaze(int level, boolean perfect) {
+		instantiateApplication(level, perfect);
 		assertTrue(null!=maze);
 		
 		tracker = new RobotOperationTracker(maze);
@@ -93,7 +99,7 @@ public class BasicRobotTest {
 	 */
 	//@After
 	public void resetFields() {
-		System.out.println("resetting fields");
+		//System.out.println("resetting fields");
 		resetState();
 		maze=null;
 		floorplan=null;
@@ -143,23 +149,45 @@ public class BasicRobotTest {
 		 * 
 		 * when justEnoughEnergy is true, this is tested explicitly
 		 */
-		if(justEnoughEnergy) robot.setBatteryLevel(energyUsageToExit+robot.getEnergyForStepForward());
-		else robot.setBatteryLevel(100000);
+		if(justEnoughEnergy) control.setInitialRobotEnergyLevel(energyUsageToExit+robot.getEnergyForStepForward());
+		else control.setInitialRobotEnergyLevel(100000);
 		//System.out.println("setting robot energy to "+robot.getBatteryLevel());
 	}
 	
+	/**
+	 * <p>Automate the testing of mazes over some number of trials.</p>
+	 * 
+	 * <p>Mazes are tested from levels 0-7; at each level, two mazes
+	 * are randomly generated: one perfect, one imperfect,
+	 * and each is subjected to the same test suite, encapsulated
+	 * in the {@link #testMaze(int, boolean) testMaze} method.</p>
+	 * 
+	 * Thus if trials=10, ((7-0)+1)*2+10 = 160 mazes are tested.
+	 * On my computer, time ratio is ~153 seconds / 10 trials.
+	 */
 	@Test
 	public void tests() {
+		int trials=10;
 		for(int level=0; level<8; level++) {
-			for(int i=0; i<20; i++) testMaze(level,i+1);
+			System.out.print("\n: > > >      Tests beginning for level "+level+"      < < < :\nrun ");
+			for(int i=0; i<trials; i++) {
+				System.out.print(trials-1==i ? (i+1) : (i+1)+", ");
+				if(((i+1)%30)==0) System.out.println();
+				testMaze(level, false);
+				testMaze(level, true);
+			}
 			
-			System.out.println(": -- -- --      Tests completed for level "+level+"      -- -- -- :");
+			System.out.println("\n: -- -- --      Tests completed for level "+level+"      -- -- -- :\n");
 		}
 	}
 	
-	public void testMaze(int level, int iter) {
-		System.out.printf("testMaze %d-%d\n",level,iter);
-		buildNewMaze(level);
+	/**
+	 * Run the suite of tests to be conducted on each maze.
+	 * @param level level of the maze
+	 * @param perfect whether or not the maze should be perfect
+	 */
+	public void testMaze(int level, boolean perfect) {
+		buildNewMaze(level, perfect);
 		
 		energyUsageToExit = walkToExit();
 		
@@ -171,7 +199,7 @@ public class BasicRobotTest {
 		
 		for (Direction d: Direction.values()) {
 			setController(true);
-			testWallCrash(d);
+			testWallCrash(d, false);
 		}
 		
 		testInsufficientEnergy_RotateStopsRobot();
@@ -185,7 +213,11 @@ public class BasicRobotTest {
 		setController(false);
 		testJumps();
 		
+		testBadJump();
+		
+		
 		setController(true);
+		
 		
 		resetFields();
 	}
@@ -203,18 +235,25 @@ public class BasicRobotTest {
 	 * Assert that the robot stops with the appropriate failure message,
 	 * and that the game ends.
 	 * @param d
+	 * @param runOutOfEnergyFirst whether or not the robot should run out of energy before crashing
 	 */
-	public void testWallCrash(Direction d) {
+	private void testWallCrash(Direction d, boolean runOutOfEnergyFirst) {
 		// move right in front of the wall
 		approachWall(d);
 		
+		if(runOutOfEnergyFirst) robot.setBatteryLevel(robot.getEnergyForStepForward()-1);
 		// walk into the wall
 		robot.move(1, true);
 		
-		// verify that robot has stopped from crash and game has ended
+		// verify that robot has stopped and game has ended
 		assertTrue(robot.hasStopped());
-		assertEquals(control.getRobotFailureMessage(),BasicRobot.badMoveMessage);
 		assertTrue(isInStateWinning());
+		
+		// if robot ran out of energy, crash should not have occurred
+		// otherwise check for crash
+		assertEquals(
+			control.getRobotFailureMessage(),
+			runOutOfEnergyFirst ? BasicRobot.noEnergyMessage : BasicRobot.badMoveMessage);
 	}
 	
 	/**
@@ -226,6 +265,61 @@ public class BasicRobotTest {
 		faceDirection(d,robot);
 		robot.move(wallDistance, true);
 		assertEquals(0, robot.distanceToObstacle(Direction.FORWARD));
+	}
+	
+	/**
+	 * Call {@link #testBadJump(boolean)} for inputs of {@code true) and {@code false}.
+	 */
+	private void testBadJump() {
+		setController(false);
+		testBadJump(false);
+		setController(false);
+		testBadJump(true);
+	}
+	
+	/**
+	 * Test that a bad jump (an attempt to jump outside a maze) fails as expected.
+	 * There is also the option to have the robot run out of energy before
+	 * attempting the bad jump, in which case the robot should stop first.
+	 * 
+	 * @param runOutOfEnergyFirst	whether to have the robot run out of energy before
+	 * 								attempting the jump
+	 */
+	private void testBadJump(boolean runOutOfEnergyFirst) {
+		//System.out.println("testing bad jump");
+		boolean[] exitDifference = MazeMath.booleanMask(MazeMath.subArrays(distance.getExitPosition(), getRobotPosition()));
+		int[] delta=null;
+		for(Direction d: Direction.values()) {
+			delta=MazeMath.getDirectionDelta(d, robot.getCurrentDirection());
+			if(!Arrays.equals(
+					MazeMath.booleanMask(delta),
+					exitDifference
+			)) {
+				//System.out.println("facing robot "+d);
+				faceDirection(d,robot);
+				break;
+			}
+		}
+		assertTrue(0==robot.getOdometerReading());
+		// get the robot to the edge of the maze
+		while(maze.isValidPosition(MazeMath.addArrays(getRobotPosition(), delta))) {
+			try{robot.jump();}
+			catch (Exception e) {assertTrue(false);}
+		}
+		
+		if(runOutOfEnergyFirst) robot.setBatteryLevel(50-1);
+		// assert that jump fails
+		try {
+			robot.jump();
+			// if exception was not thrown, must have been because of no energy
+			assertEnergyDepleted();
+		} catch (Exception e) {
+			// e.printStackTrace();
+			// if we get here, robot must have had energy and made bad jump
+			assertTrue(robot.getBatteryLevel()>=0);
+			assertTrue(robot.hasStopped());
+			assertTrue(control.getRobotFailureMessage()==BasicRobot.badJumpMessage);
+		}
 	}
 	
 	/**
@@ -286,24 +380,44 @@ public class BasicRobotTest {
 		return initialEnergy;
 	}
 	
+	/**
+	 * Tell whether a jump is possible in a given direction.
+	 * Requires:
+	 *   <ul>
+	 *     <li> sufficient energy </li>
+	 *     <li> wall immediaetly in front </li>
+	 *     <li> not jumping out of maze </li>
+	 *   </ul>
+	 * 
+	 * 
+	 * @param d a {@link Direction} value
+	 * @return whether a jump is possible towards {@code d}
+	 */
 	private boolean jumpPossible(Direction d) {
 		int[] neighbor = MazeMath.getNeighborInDirection(getRobotPosition(), d, robot.getCurrentDirection());
 		
 		return (robot.getBatteryLevel()>=53 && //sufficient battery
 				robot.distanceToObstacle(d)==0 && // facing a wall at 0 distance
-				maze.isValidPosition(neighbor[0], neighbor[1]) // destination is inside maze
+				maze.isValidPosition(neighbor) // destination is inside maze
 				);
 	}
 	
+	/**
+	 * Get the distances to obstacles in all directions
+	 * as a list in right-moving order starting at forward.
+	 */
 	public ArrayList<Integer> getDistancesList() {
 		ArrayList<Integer> list = new ArrayList<Integer>(4);
-		for(Direction d: Direction.values()) {
+		for(Direction d: MazeMath.ForwardRightBackwardLeft) {
 			list.add(robot.distanceToObstacle(d));
 		}
 		return list;
 	}
-	/*
-	*/
+	
+	/**
+	 * Get the distances to obstacles in all directions
+	 * as a map::|direction:distance&#62;
+	 */
 	private HashMap<Direction,Integer> getDistancesMap() {
 		HashMap<Direction,Integer> map = new HashMap<Direction,Integer>(4);
 		for(Direction d: Direction.values()) {
@@ -312,7 +426,18 @@ public class BasicRobotTest {
 		return map;
 	}
 	
+	/**
+	 * Operate a robot from a {@link RobotOperation} instance,
+	 * with tests embedded.
+	 * 
+	 * @param op a {@link RobotOperation} instance
+	 * @param tryInterrupt whether or not the operation can be interrupted
+	 * @return true if operation proceeds, false if interrupted
+	 */
 	private boolean operateRobot(RobotOperation op, boolean tryInterrupt) {
+		// we have the option to stop the current operation from occurring
+		// if we reach a cell where the robot can jump
+		// functionality used for testing in other methods
 		if(tryInterrupt) {
 			for(Direction d: Direction.values()) {
 				if(jumpPossible(d)) {
@@ -322,23 +447,30 @@ public class BasicRobotTest {
 			}
 		}
 		
+		// store robot details now for comparison after operation is performed
 		HashMap<Direction,Integer> distances = (op instanceof RobotRotation) ? getDistancesMap() : null;
 		int[] position = getRobotPosition();
+		CardinalDirection cd = robot.getCurrentDirection();
 		boolean exitSight = canSeeExitInAnyDirection();
 		boolean insideRoom = robot.isInsideRoom();
+		int odometerReading = robot.getOdometerReading();
 		
 		op.operateRobot(robot);
 		assertOrientation();
 		
-		// check that distances have not changed after rotation, simply rotated
 		if(op instanceof RobotRotation) {
-			//things that should not change with rotation
+			HashMap<Direction,Integer> distancesRotated = getDistancesMap();
+			Turn turn = ((RobotRotation) op).getTurn();
+			
+			// things that should not change with rotation
 			assertTrue(Arrays.equals(position,getRobotPosition()));
 			assertEquals(exitSight,canSeeExitInAnyDirection());
 			assertEquals(insideRoom,robot.isInsideRoom());
+			assertTrue(robot.getOdometerReading()==odometerReading);
 			
-			HashMap<Direction,Integer> distancesRotated = getDistancesMap();
-			Turn turn = ((RobotRotation) op).getTurn();
+			// absolute direction should have changed as expected
+			assertEquals(robot.getCurrentDirection(),MazeMath.getFrom(cd, turn));
+			
 			for(Direction d: Direction.values()) {
 				Direction newDirection = MazeMath.directionToDirection(d, turn);
 				//System.out.printf("%s : %s --> %s\n",d,turn,newDirection);
@@ -354,20 +486,38 @@ public class BasicRobotTest {
 				 * since the robot only rotated and did not move,
 				 * the distance in the absolute direction <A> should not change over the rotation
 				 * 
-				 * hence why this comparison
+				 * hence this comparison
 				 */
 				int dist1=distances.get(d), dist2=distancesRotated.get(newDirection);
 				assertEquals(dist1+"!="+dist2,dist1,dist2);
 			}
 		}
 		
+		else if(op instanceof RobotMove) {
+			// direction should not change with move
+			assertEquals(cd,robot.getCurrentDirection());
+			
+			// distance should change
+			int opDistance=((RobotMove)op).getDistance();
+			assertTrue(robot.getOdometerReading()==odometerReading+opDistance);
+			assertTrue(MazeMath.manhattanDistance(getRobotPosition(), position)==opDistance);
+		}
+		
 		return true;
 	}
 	
+	/**
+	 * Wrapper around {@link #walkToExit(boolean)}; default value is false.
+	 * @return result of {@link #walkToExit(boolean)}
+	 */
 	private float walkToExit() {
 		return walkToExit(false);
 	}
 	
+	/**
+	 * Test whether the robot can see the exit in any direction.
+	 * @return true if exit is in sight
+	 */
 	private boolean canSeeExitInAnyDirection() {
 		for(Direction d: Direction.values()) {
 			if(robot.canSeeThroughTheExitIntoEternity(d)) return true;
@@ -447,10 +597,13 @@ public class BasicRobotTest {
 		
 		try {
 			robot.jump();
-			//should be outside
+			
+			//should now be outside
 			assertOutsideMaze();
 			successfulExit=true;
+		
 		} catch (Exception e) {
+			// get here if jump failed to result in move operation
 			successfulExit=false;
 		}
 		assertTrue(successfulExit);
@@ -467,20 +620,59 @@ public class BasicRobotTest {
 		assertOutsideMaze();
 	}
 	
+	/**
+	 * Test that the robot has run out of energy and the game has ended.
+	 */
 	private void assertEnergyDepleted() {
 		assertTrue(isInStateWinning());
+		assertTrue(robot.hasStopped());
 		assertTrue("robot still has energy: "+robot.getBatteryLevel()+ " : "+control.getRobotFailureMessage(),
 					control.getRobotFailureMessage()==BasicRobot.noEnergyMessage);
 	}
 	
+	/**
+	 * Test the special case where the robot receives a command to turn around
+	 * and has enough energy for only one rotation.
+	 */
+	private void testAround() {
+		robot.setBatteryLevel(2*(robot.getEnergyForFullRotation()/4)-1);
+		
+		// distances in every direction before rotation
+		List<Integer> distancesBeforeRotation = getDistancesList();
+		
+		robot.rotate(Turn.AROUND);
+		
+		assertEnergyDepleted();
+		
+		// distances in every direction before rotation
+		List<Integer> distancesAfterRotation = getDistancesList();
+		
+		// the robot should show the signature of one left rotation, not two
+		Collections.rotate(distancesBeforeRotation, 1);
+		assertEquals(distancesBeforeRotation,distancesAfterRotation);
+	}
+	
+	/**
+	 * Call {@link #testInsufficientEnergy_RotateStopsRobot(Turn)} for each {@link Turn} value,
+	 * then call {@link #testAround()}.
+	 */
 	private void testInsufficientEnergy_RotateStopsRobot() {
 		for(Turn t: Turn.values()) {
 			setController(false);
 			testInsufficientEnergy_RotateStopsRobot(t);
 		}
+		
+		setController(false);
+		testAround();
 	}
 	
+	/**
+	 * Test that the robot does not rotate if it has insufficient energy
+	 * for a single rotation.
+	 * @param t {@link Turn} value for {@link BasicRobot#rotate(Turn) BasicRobot.rotate}
+	 */
 	private void testInsufficientEnergy_RotateStopsRobot(Turn t) {
+		// set battery just below what is required for turn
 		robot.setBatteryLevel(robot.getEnergyForFullRotation()/4-1);
 		
 		ArrayList<Integer> distances = getDistancesList();
@@ -493,6 +685,10 @@ public class BasicRobotTest {
 		
 	}
 	
+	/**
+	 * Test whether a robot stops as expected when it tries to move
+	 * without having enough energy.
+	 */
 	private void testInsufficientEnergy_MoveStopsRobot() {
 		// first put the robot in a position where it can move
 		while(robot.distanceToObstacle(Direction.FORWARD)==0) robot.rotate(Turn.LEFT);
@@ -522,12 +718,24 @@ public class BasicRobotTest {
 		
 	}
 
+	/**
+	 * Call {@link #testInsufficientEnergy_JumpStopsRobot(boolean)} with input values
+	 * {@code true} and {@code false}.
+	 */
 	private void testInsufficientEnergy_JumpStopsRobot() {
 		testInsufficientEnergy_JumpStopsRobot(true);
 		setController(false);
 		testInsufficientEnergy_JumpStopsRobot(false);
 	}
 
+	/**
+	 * Test whether a robot stops after attempting a jump due to insufficient energy.
+	 * The robot either has too little energy to jump, or enough energy to jump
+	 * but not enough energy to sense distances after the jump.
+	 * 
+	 * @param withDistanceEnergy	if true, the robot has energy to jump,
+	 * 								but not enough to sense distances afterwards
+	 */
 	private void testInsufficientEnergy_JumpStopsRobot(boolean withDistanceEnergy) {
 		// walk the robot to an orientation where a jump is possible
 		walkToExit(true);
@@ -552,16 +760,41 @@ public class BasicRobotTest {
 		
 	}
 	
+	/**
+	 * Test that a robot can jump over a wall, turn around,
+	 * and jump over the same wall without errors. Calls
+	 * the {@link #testJump()} method to perform tests.
+	 */
 	private void testJumps() {
 		// walk the robot to an orientation where a jump is possible
 		walkToExit(true);
 		
+		int[] position = getRobotPosition();
+		float energyBeforeJump = robot.getBatteryLevel();
+		
 		// jump forwards, then return back to original position
 		testJump();
+		
+		// used energy for a jump + sensing distance in three directions
+		assertTrue(energyBeforeJump - 53 == robot.getBatteryLevel());
+		
 		robot.rotate(Turn.AROUND);
+		
+		// add on energy of two rotations
+		assertTrue(energyBeforeJump - (53+2*(robot.getEnergyForFullRotation()/4)) == robot.getBatteryLevel());
+		
 		testJump();
+		
+		// add on energy of another jump and distance collection
+		assertTrue(energyBeforeJump - (2*53+2*(robot.getEnergyForFullRotation()/4)) == robot.getBatteryLevel());
+		
+		// net position has not changed
+		assertTrue(Arrays.equals(position, getRobotPosition()));
 	}
 	
+	/**
+	 * Test that a robot completes a jump without error.
+	 */
 	private void testJump() {
 		int[] pos = getRobotPosition();
 		int[][] dists=distance.getAllDistanceValues();
@@ -594,6 +827,7 @@ public class BasicRobotTest {
 	private void assertEqualOrientation() {
 		assertTrue(Arrays.equals(getRobotPosition(),control.getCurrentPosition()));
 		assertEquals(robot.getCurrentDirection(),control.getCurrentDirection());
+		assertEquals(robot.isInsideRoom(),floorplan.isInRoom(getRobotPosition()));
 	}
 	
 	private void assertExitSight() {
@@ -660,7 +894,7 @@ public class BasicRobotTest {
 		buildThread.start();
 		try {
 			buildThread.join();
-			System.out.println("100");
+			if(!Controller.suppressUpdates) System.out.println("100");
 			
 			//this.maze=order.getMaze();
 			//this.control=controller;
@@ -1046,7 +1280,6 @@ class RobotOperationTracker {
 		
 		// the exit distance from start specified by the maze
 		// should match the distance we have traveled
-		
 		assert distance.getMaxDistance()==totalDistance : 
 			String.format("Total distance %d != maze max distance % d", totalDistance, distance.getMaxDistance());
 		
