@@ -99,6 +99,11 @@ public class Controller {
 	 */
 	float initialRobotEnergyLevel;
 	
+	/**
+	 * suppress certain warnings from printing, used for testing
+	 */
+	public static boolean suppressWarnings=false;
+	
 	public Controller() {
 		init(false);
 	}

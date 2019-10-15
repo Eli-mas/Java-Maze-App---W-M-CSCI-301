@@ -153,18 +153,25 @@ public class MazeMath {
 		int index = WestSouthEastNorth.indexOf(currentDirection);
 		int adjust;
 		
-		// array is arranged in left-to-right order
+		/* array is arranged in left-to-right order
 		switch(turn) {
 			case LEFT: adjust=-1; break;
 			case RIGHT: adjust=1; break;
 			case AROUND: adjust=2; break;
 			default: return null;
-		}
+		}*/
 		
 		// use floorMod to prevent negative index
-		return WestSouthEastNorth.get(Math.floorMod(index+adjust,4));
+		return WestSouthEastNorth.get(Math.floorMod(index+getTurnIndex(turn),4));
 	}
 	
+	/**
+	 * Convert a {@link Direction} value to a {@link Turn} value;
+	 * since both values indicate some form of relative direction,
+	 * there is a one-to-one correspondence.
+	 * @param d a {@link Direction} value
+	 * @return the turn that will put us facing the specified direction
+	 */
 	public static Turn directionToTurn(Direction d) {
 		switch(d) {
 			//case FORWARD: return null;
@@ -173,6 +180,72 @@ public class MazeMath {
 			case RIGHT: return Turn.RIGHT;
 			default: return null;
 		}
+	}
+	
+	/**
+	 * <p>Relative to the current forward direction, get the new direction
+	 * we will face if we turn by a certain {@link Turn} value.</p>
+	 * 
+	 * <p><b>Example</b>: consider a robot's LEFT direction. The robot rotates RIGHT.
+	 * The direction formerly referenced as LEFT is now referenced as BACKWARDS.</p>
+	 * 
+	 * <p>Another way of phrasing this: in the above example, say the robot before the turn
+	 * is in state 1 and after the turn in state 2. Then the robot's notion of left in state 1
+	 * and the robot's notion of backwards in state 2 both point to the same absolute direction.</p>
+	 * 
+	 * @param d a {@link Direction} value
+	 * @param turn a {@link Turn} value
+	 * @return the direction resulting from the specified turn
+	 */
+	public static Direction directionToDirection(Direction d, Turn turn) {
+		return ForwardRightBackwardLeft.getFrom(d, -MazeMath.getTurnIndex(turn));
+	}
+	
+	public static int getTurnIndex(Turn t) {
+		switch(t) {
+			case LEFT: return -1;
+			case RIGHT: return 1;
+			case AROUND: return 2;
+			default: return 0;
+		}
+	}
+	
+	/**
+	 * Get the (x,y) adjustment analogous to moving in the specified direction
+	 * 
+	 * @param d a {@link Direction} value
+	 * @param currentDirection the {@link CardinalDirection} that corresponds to forward
+	 * 
+	 * @return the (x,y) direction corresponding to {@code d}
+	 */
+	public static int[] getDirectionDelta(Direction d, CardinalDirection currentDirection) {
+		return DirectionToCardinalDirection(d, currentDirection).getDirection();
+	}
+	
+	/**
+	 * Get the neighboring cell in the specified direction from the current cell
+	 * 
+	 * @param cell current (x,y) position
+	 * @param d a {@link Direction} of reference
+	 * @param currentDirection the {@link CardinalDirection} that corresponds to forward
+	 * 
+	 * @return the (x,y) of the neighbor in the direction {@code d}
+	 */
+	public static int[] getNeighborInDirection(int[] cell, Direction d, CardinalDirection currentDirection) {
+		return addArrays(cell,getDirectionDelta(d, currentDirection));
+	}
+	
+	/**
+	 * Get the neighboring cell in the specified cardinal direction from the current cell
+	 * 
+	 * @param cell current (x,y) position
+	 * @param d a {@link Direction} of reference
+	 * @param currentDirection the {@link CardinalDirection} that corresponds to forward
+	 * 
+	 * @return the (x,y) of the neighbor in the cardinal direction {@code currentDirection}
+	 */
+	public static int[] getNeighborInCardinalDirection(int[] cell, CardinalDirection cd) {
+		return addArrays(cell,cd.getDirection());
 	}
 	
 	/**
@@ -189,7 +262,7 @@ public class MazeMath {
 		
 		for(CardinalDirection cd: CardinalDirection.values()) {
 			if(floorplan.hasNoWall(cell[0], cell[1], cd))
-				neighbors.add(addArrays(cell,cd.getDirection()));
+				neighbors.add(getNeighborInCardinalDirection(cell,cd));
 		}
 		
 		return neighbors;

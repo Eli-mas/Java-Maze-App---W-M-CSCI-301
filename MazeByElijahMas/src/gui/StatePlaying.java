@@ -118,7 +118,7 @@ public class StatePlaying extends DefaultState {
 		}
 		else {
 			// else: dry-run without graphics, most likely for testing purposes
-			printWarning();
+			if(!Controller.suppressWarnings) printWarning();
 		}
 	}
 	/**
@@ -321,7 +321,7 @@ public class StatePlaying extends DefaultState {
 	 */
 	protected void draw() {
 		if (panel == null) {
-			printWarning();
+			if(!Controller.suppressWarnings) printWarning();
 			return;
 		}
 		// draw the first person view and the map view if wanted

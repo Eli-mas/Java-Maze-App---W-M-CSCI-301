@@ -53,7 +53,8 @@ public class StateWinning extends DefaultState {
         view.setController(controller);
 
         if (panel == null) {
-    		System.out.println("StateWinning.start: warning: no panel, dry-run game without graphics!");
+    		if(!Controller.suppressWarnings)
+    			System.out.println("StateWinning.start: warning: no panel, dry-run game without graphics!");
     		return;
     	}
         // otherwise show finish screen with winning message

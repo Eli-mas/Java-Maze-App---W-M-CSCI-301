@@ -371,7 +371,17 @@ public class BasicRobot implements Robot {
 			throw new UnsupportedOperationException("sensor in direction "+direction+" is not operational");
 		
 		// obstacleDistancesForwardRightBackwardLeft is updated when operations are performed
-		return obstacleDistancesForwardRightBackwardLeft.get(MazeMath.getDirectionIndex(direction));
+		int distance=obstacleDistancesForwardRightBackwardLeft.get(MazeMath.getDirectionIndex(direction));
+		
+		if(-1==distance) // this should not throw an exception, but to satisfy compiler
+			try {
+				distance=calculateObstacleDistance(direction);
+			} catch (Exception e) {
+				System.out.println("second exception in distanceToObstacle: "+e.getMessage());
+				//e.printStackTrace();
+			}
+		
+		return distance;
 	}
 	
 	/**
@@ -383,18 +393,19 @@ public class BasicRobot implements Robot {
 	 * @throws Exception originates from {@link #getCurrentPosition() getCurrentPosition}
 	 * called in {@link #getObstacleDistance(gui.Robot.Direction) getObstacleDistance}
 	 */
-	private boolean calculateObstacleDistance(Direction direction) throws Exception {
+	private int calculateObstacleDistance(Direction direction) throws Exception {
 		if(!hasOperationalSensor(direction)) {
+			obstacleDistancesForwardRightBackwardLeft.set(MazeMath.getDirectionIndex(direction), -1);
 			throw new UnsupportedOperationException(
 					"cannot calculate distance: "+direction+" sensor not operational");
 		}
 		try {
-			if(!attemptEnergyDepletion(energyUsedForDistanceSensing)) return false;
+			if(!attemptEnergyDepletion(energyUsedForDistanceSensing)) return -1;
 			int d = getObstacleDistance(direction);
 			
 			obstacleDistancesForwardRightBackwardLeft.set(MazeMath.getDirectionIndex(direction), d);
 			
-			return true;
+			return d;
 		} catch (Exception e){
 			throw new UnsupportedOperationException(
 					"distanceToObstacle at direction "+direction+" failed:",e);
@@ -433,16 +444,20 @@ public class BasicRobot implements Robot {
 			System.out.printf("robot is rotating RIGHT from %s: %s",currentDirection,obstacleDistancesForwardRightBackwardLeft);
 		}
 		
+		// check that we don't run out of energy before attempting rotation
+		if(!attemptEnergyDepletion(energyUsedForRotation)) return;
+		
 		// moving right is aligned with moving forward in array
 		// which means: for what was right to become the new forward,
 		// we have to rotate the array backwards
 		Collections.rotate(obstacleDistancesForwardRightBackwardLeft, -1);
 		
-		if(!attemptEnergyDepletion(energyUsedForRotation)) return;
-		
+		// convert a turn to a cardinal direction and set current direction for robot
 		currentDirection=MazeMath.turnToCardinalDirection(Turn.RIGHT, getCurrentDirection());
+		// sets current direction for controller
 		control.keyDown(UserInput.Right, 0);
 		
+		// check for agreement between robot & controller
 		assert control.getCurrentDirection()==currentDirection;
 		if(VERBOSE) {
 			System.out.printf(" --> %s, now facing %s\n",obstacleDistancesForwardRightBackwardLeft,currentDirection);
@@ -458,14 +473,18 @@ public class BasicRobot implements Robot {
 			System.out.printf("robot is rotating LEFT from %s: %s",currentDirection,obstacleDistancesForwardRightBackwardLeft);
 		}
 		
+		// check that we don't run out of energy before attempting rotation
+		if(!attemptEnergyDepletion(energyUsedForRotation)) return;
+		
 		// opposite of right -- see `rotateRight` above for explanation
 		Collections.rotate(obstacleDistancesForwardRightBackwardLeft, 1);
 		
-		if(!attemptEnergyDepletion(energyUsedForRotation)) return;
-		
+		// convert a turn to a cardinal direction and set current direction for robot
 		currentDirection=MazeMath.turnToCardinalDirection(Turn.LEFT, getCurrentDirection());
+		// sets current direction for controller
 		control.keyDown(UserInput.Left, 0);
 		
+		// check for agreement between robot & controller
 		assert control.getCurrentDirection()==currentDirection;
 		if(VERBOSE) {
 			System.out.printf(" --> %s, now facing %s\n",obstacleDistancesForwardRightBackwardLeft,currentDirection);
@@ -480,6 +499,7 @@ public class BasicRobot implements Robot {
 			}
 			return;
 		}
+		// we know how much energy should be used, so let's store the value for a test
 		Float expectedEnergyDifference, energyBeforeRotation = getBatteryLevel();
 		switch(turn) {
 			case RIGHT:
@@ -504,7 +524,8 @@ public class BasicRobot implements Robot {
 				expectedEnergyDifference=null;
 		}
 		
-		assert energyBeforeRotation-getBatteryLevel() == expectedEnergyDifference :
+		// if we stopped, we didn't use the expected energy; if not, we can check this
+		if(!hasStopped()) assert energyBeforeRotation-getBatteryLevel() == expectedEnergyDifference :
 			"energy difference before/after rotation: "+
 			(energyBeforeRotation-getBatteryLevel())+
 			", exepcted: "+expectedEnergyDifference;
@@ -527,6 +548,7 @@ public class BasicRobot implements Robot {
 				return;
 			}
 			
+			// use energies for another usage check
 			float energyBeforeMove=getBatteryLevel();
 			
 			moveSingle(manual);
@@ -663,8 +685,11 @@ public class BasicRobot implements Robot {
 				
 				// we know that the robot must be in front of a wall
 				// i.e. distance to wall backwards is 0
-				calculateDistances(Direction.BACKWARD);
 				obstacleDistancesForwardRightBackwardLeft.set(2, 0);
+				
+				calculateDistances(Direction.BACKWARD);
+				// could run out of energy here
+				if(hasStopped()) return;
 				
 				//incrementVisitCount(currentPosition); //prospective for Project 4
 				
@@ -678,12 +703,14 @@ public class BasicRobot implements Robot {
 					(energyBeforeJump-getBatteryLevel())+
 					", exepcted: "+(energyUsedForJump+3*energyUsedForDistanceSensing);
 			}
-			catch (Exception e) {endGame(badJumpMessage);}
+			catch (Exception e) {
+				//System.out.println("BasicRobot.jump: exception thrown:\n");
+				//e.printStackTrace();
+				endGame(badJumpMessage);
+				throw new Exception(badJumpMessage);
+			}
 		}
 	}
-	
-	
-	
 	
 	
 	
