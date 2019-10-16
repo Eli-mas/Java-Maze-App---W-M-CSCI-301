@@ -21,6 +21,10 @@ import comp.ExtendedList;
  * {@link gui.Robot.Direction} and {@link gui.Robot.Turn}, which can
  * be used by other classes without hassle.
  * 
+ * At the moment intended for use in {@link Robot} class and anything
+ * that may operate it, including {@link BasicRobotTest}
+ * and {@link gui.RobotDriver}.
+ * 
  * @author Elijah Mas
  *
  */
@@ -53,7 +57,7 @@ public class MazeMath {
 		ExtendedList.from(Direction.FORWARD, Direction.RIGHT, Direction.BACKWARD, Direction.LEFT);
 
 	/**
-	 * Return the sum of two arrays of equal length.
+	 * Return the element-wise sum of two arrays of equal length.
 	 * 
 	 * @param a1 an array of type int[]
 	 * @param a2 an array of type int[]
@@ -70,7 +74,7 @@ public class MazeMath {
 	}
 
 	/**
-	 * Return the difference of two arrays of equal length.
+	 * Return the element-wise subtraction of two arrays of equal length.
 	 * 
 	 * @param a1 an array of type int[]
 	 * @param a2 an array of type int[]
@@ -93,14 +97,6 @@ public class MazeMath {
 	 * @return the corresponding position of d in {@value #ForwardRightBackwardLeft}
 	 */
 	public static int getDirectionIndex(Direction d) {
-		/*switch(d) {
-			case FORWARD:	return 0;
-			case RIGHT:		return 1;
-			case BACKWARD:	return 2;
-			case LEFT:		return 3;
-			
-			default:		return null;
-		}*/
 		return ForwardRightBackwardLeft.indexOf(d);
 	}
 	
@@ -114,55 +110,30 @@ public class MazeMath {
 	 * 							(meant for a robot)
 	 * @return {@link CardinalDirection} corresponding to input direction
 	 */
-	public static CardinalDirection DirectionToCardinalDirection(Direction d, CardinalDirection currentDirection) {
+	public static CardinalDirection convertDirs(Direction d, CardinalDirection currentDirection) {
 		// because of the parallelism between WestSouthEastNorth and ForwardRightBackwardLeft,
 		// the distance between d and forward must be the same between
 		// the target CardinalDirection and the current CardinalDirection
-		return WestSouthEastNorth.getFrom(currentDirection, getDirectionIndex(d)
-				/*get(
-				(
-					WestSouthEastNorth.indexOf(currentDirection) + getDirectionIndex(d)
-				)
-				%4*/
-			);
+		return getFrom(currentDirection, getDirectionIndex(d));
 	}
 	
-	public static Direction CardinalDirectionToDirection(CardinalDirection input, CardinalDirection currentDirection) {
+	/**
+	 * Convert an absolute {@link CardinalDirection} to a relative {@link Direction).
+	 * Requires knowledge of the absolute direction corresponding to the forward direction.
+	 * 
+	 * @param input the {@link CardinalDirection} to convert
+	 * @param currentDirection the {@link CardinalDirection} that gives the same direction
+	 * 						   as the forward direction
+	 * @return the analogous {@link Direction}
+	 */
+	public static Direction convertDirs(CardinalDirection input, CardinalDirection currentDirection) {
 		// get the rotational difference from currentDirection to input,
 		// then move this distance in ForwardRightBackwardLeft and return the result
 		// difference of 0 means input = currentDirection
 		
 		return ForwardRightBackwardLeft.get(
 				WestSouthEastNorth.getDistanceFromToMod(currentDirection, input)
-		/*		Math.floorMod(
-					WestSouthEastNorth.indexOf(input)
-					- WestSouthEastNorth.indexOf(currentDirection)
-				, 4)*/
-		);
-	}
-
-	/**
-	 * Get the new absolute direction resulting in a specified
-	 * turn from the current absolute direction; intended for
-	 * usage pertinent to a {@link gui.Robot Robot} instance.
-	 * @param turn a value of {@link Turn}
-	 * @param currentDirection the {@link CardinalDirection} that corresponds to the robot's current forward direction
-	 * @return the {@link CardinalDirection} that results from the given turn
-	 */
-	public static CardinalDirection turnToCardinalDirection(Turn turn, CardinalDirection currentDirection) {
-		int index = WestSouthEastNorth.indexOf(currentDirection);
-		int adjust;
-		
-		/* array is arranged in left-to-right order
-		switch(turn) {
-			case LEFT: adjust=-1; break;
-			case RIGHT: adjust=1; break;
-			case AROUND: adjust=2; break;
-			default: return null;
-		}*/
-		
-		// use floorMod to prevent negative index
-		return WestSouthEastNorth.get(Math.floorMod(index+getTurnIndex(turn),4));
+				);
 	}
 	
 	/**
@@ -183,8 +154,10 @@ public class MazeMath {
 	}
 	
 	/**
-	 * <p>Relative to the current forward direction, get the new direction
-	 * we will face if we turn by a certain {@link Turn} value.</p>
+	 * <p>Relative to the current forward direction,
+	 * get the new relative directional reference
+	 * to some direction {@code d}
+	 * resulting from a turn.</p>
 	 * 
 	 * <p><b>Example</b>: consider a robot's LEFT direction. The robot rotates RIGHT.
 	 * The direction formerly referenced as LEFT is now referenced as BACKWARDS.</p>
@@ -197,7 +170,7 @@ public class MazeMath {
 	 * @param turn a {@link Turn} value
 	 * @return the direction resulting from the specified turn
 	 */
-	public static Direction directionToDirection(Direction d, Turn turn) {
+	public static Direction getNewDirectionReferenceOverTurn(Direction d, Turn turn) {
 		return ForwardRightBackwardLeft.getFrom(d, -getTurnIndex(turn));
 	}
 	
@@ -218,24 +191,63 @@ public class MazeMath {
 		}
 	}
 	
+	/**
+	 * Return a boolean mask of an array:<ul>
+	 * <li>0 maps to false,</li> <li>all other values map to true</li>
+	 * </ul>
+	 * 
+	 * @param a input array
+	 * @return boolean map of a
+	 */
 	public static boolean[] booleanMask(int[] a) {
 		boolean[] b = new boolean[a.length];
-		for(int i=0; i<a.length; i++) b[i]=(0!=a[i]);
+		for(int i=0; i<a.length; i++)
+			b[i]=(0!=a[i]);
 		return b;
 	}
 	
+	/**
+	 * Get the {@link Direction} which is a specified integer
+	 * distance away from the current direction (+1--&#62;right, -1--&#62;left).
+	 * @param source {@Direction} value
+	 * @param distanceFrom distance to move from this direction
+	 * @return the resulting direction
+	 */
 	public static Direction getFrom(Direction source, int distanceFrom) {
 		return ForwardRightBackwardLeft.getFrom(source, distanceFrom);
 	}
 	
+	
+	/**
+	 * Get the {@link CardinalDirection} that is a specified integer
+	 * distance away from the current direction (+1--&#62;right, -1--&#62;left).
+	 * @param source {@CardinalDirection} value
+	 * @param distanceFrom distance to move from this cardinal direction
+	 * @return the resulting cardinal direction
+	 */
 	public static CardinalDirection getFrom(CardinalDirection source, int distanceFrom) {
 		return WestSouthEastNorth.getFrom(source, distanceFrom);
 	}
 	
+	
+	/**
+	 * Get the {@link Direction} that is a specified {@link Turn}
+	 * distance away from the current direction.
+	 * @param source {@Direction} value
+	 * @param turn {@Turn} to move from this direction
+	 * @return the resulting direction
+	 */
 	public static Direction getFrom(Direction source, Turn turn) {
 		return ForwardRightBackwardLeft.getFrom(source, getTurnIndex(turn));
 	}
 	
+	/**
+	 * Get the {@link CardinalDirection} that is a specified {@link Turn}
+	 * distance away from the current direction.
+	 * @param source {@CardinalDirection} value
+	 * @param turn {@Turn} to move from this cardinal direction
+	 * @return the resulting cardinal direction
+	 */
 	public static CardinalDirection getFrom(CardinalDirection source, Turn turn) {
 		return WestSouthEastNorth.getFrom(source, getTurnIndex(turn));
 	}
@@ -248,8 +260,8 @@ public class MazeMath {
 	 * 
 	 * @return the (x,y) direction corresponding to {@code d}
 	 */
-	public static int[] getDirectionDelta(Direction d, CardinalDirection currentDirection) {
-		return DirectionToCardinalDirection(d, currentDirection).getDirection();
+	public static int[] directionToDelta(Direction d, CardinalDirection currentDirection) {
+		return convertDirs(d, currentDirection).getDirection();
 	}
 	
 	/**
@@ -261,8 +273,8 @@ public class MazeMath {
 	 * 
 	 * @return the (x,y) of the neighbor in the direction {@code d}
 	 */
-	public static int[] getNeighborInDirection(int[] cell, Direction d, CardinalDirection currentDirection) {
-		return addArrays(cell,getDirectionDelta(d, currentDirection));
+	public static int[] getNeighbor(int[] cell, Direction d, CardinalDirection currentDirection) {
+		return addArrays(cell,directionToDelta(d, currentDirection));
 	}
 	
 	/**
@@ -274,7 +286,7 @@ public class MazeMath {
 	 * 
 	 * @return the (x,y) of the neighbor in the cardinal direction {@code currentDirection}
 	 */
-	public static int[] getNeighborInCardinalDirection(int[] cell, CardinalDirection cd) {
+	public static int[] getNeighbor(int[] cell, CardinalDirection cd) {
 		return addArrays(cell,cd.getDirection());
 	}
 	
@@ -291,8 +303,13 @@ public class MazeMath {
 		Floorplan floorplan = maze.getFloorplan();
 		
 		for(CardinalDirection cd: CardinalDirection.values()) {
-			if(floorplan.hasNoWall(cell[0], cell[1], cd))
-				neighbors.add(getNeighborInCardinalDirection(cell,cd));
+			// get cells not separated from current cell by wall
+			// this condition would be sufficient on its own to prevent
+			// acceptance of positions outside maze (due to border walls),
+			// save that the exit cell would register as having a valid neighbor
+			// outside the maze, so we have to check for this cell as well
+			if(floorplan.hasNoWall(cell[0], cell[1], cd) && maze.isValidPosition(cell))
+				neighbors.add(getNeighbor(cell,cd));
 		}
 		
 		return neighbors;
@@ -304,10 +321,12 @@ public class MazeMath {
 	 * 
 	 * @param cell {x,y} location in maze
 	 * @param maze {@link Maze} instance
-	 * @return neighoring cell that is closer to exit
+	 * @return neighboring cell that is closer to exit
 	 */
 	public static int[] getNeighborCloserToExit(int[] cell, Maze maze) {
 		int targetDistance = maze.getDistanceToExit(cell[0], cell[1])-1;
+		
+		// find neighboring cell with distance one less than current cell
 		for(int[] n: getMazeCellNeighbors(cell, maze)) {
 			if(maze.getDistanceToExit(n[0], n[1])==targetDistance) return n;
 		}
@@ -341,7 +360,7 @@ public class MazeMath {
 	}
 
 	/**
-	 * Realtive to the exit cell of a maze,
+	 * Relative to the exit cell of a maze,
 	 * get the {@link CardinalDirection} that leads
 	 * from this cell out of the maze.
 	 * @param maze a {@link Maze} instance

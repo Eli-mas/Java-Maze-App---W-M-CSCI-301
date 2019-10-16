@@ -177,23 +177,30 @@ public class BasicRobotTest {
 	 * and each is subjected to the same test suite, encapsulated
 	 * in the {@link #testMaze(int, boolean) testMaze} method.</p>
 	 * 
-	 * Thus if trials=10, ((7-0)+1)*2+10 = 160 mazes are tested.
-	 * On my computer, time ratio is ~153 seconds / 10 trials.
+	 * <p>Thus if trials=10, ((7-0)+1)*2+10 = 160 mazes are tested.
+	 * On my computer, time ratio is ~150-160 seconds / 10 trials.</p>
+	 * 
+	 * <p>The reason all tests are combined into one main method instead of
+	 * labeling each method as a {@code @Test} method is because
+	 * the above permutation of test case (8 levels &#215; 2 perfect values &#215; 10 trials)
+	 * is difficult to achieve the latter way.</p>
 	 */
-	@Test
-	public void tests() {
+	@ParameterizedTest
+	@ValueSource(ints = {0,1,2,3,4,5,6,7})
+	public void tests(int level) {
 		int trials=10;
-		for(int level=0; level<8; level++) {
-			System.out.print("\n: > > >      Tests beginning for level "+level+"      < < < :\nrun ");
-			for(int i=0; i<trials; i++) {
-				System.out.print(trials-1==i ? (i+1) : (i+1)+", ");
-				if(((i+1)%30)==0) System.out.println();
-				testMaze(level, false);
-				testMaze(level, true);
-			}
+		System.out.print("\n: > > >      Tests beginning for level "+level+"      < < < :\nrun ");
+		for(int i=0; i<trials; i++) {
+			System.out.print(trials-1==i ? (i+1) : (i+1)+", ");
 			
-			System.out.println("\n: -- -- --      Tests completed for level "+level+"      -- -- -- :\n");
+			if(((i+1)%30)==0) System.out.println();
+			
+			//test on imperfect and perfect mazes
+			testMaze(level, false);
+			testMaze(level, true);
+			
 		}
+		System.out.println("\n: -- -- --      Tests completed for level "+level+"      -- -- -- :\n");
 	}
 	
 	/**
@@ -232,6 +239,11 @@ public class BasicRobotTest {
 		
 		
 		walkToExitWithDisabledSensors();
+		
+		setController(false);
+		testSensorInterruption();
+		
+		testResetOdometer();
 		
 		setController(true);
 		resetFields();
@@ -305,7 +317,7 @@ public class BasicRobotTest {
 		boolean[] exitDifference = MazeMath.booleanMask(MazeMath.subArrays(distance.getExitPosition(), getRobotPosition()));
 		int[] delta=null;
 		for(Direction d: Direction.values()) {
-			delta=MazeMath.getDirectionDelta(d, robot.getCurrentDirection());
+			delta=MazeMath.directionToDelta(d, robot.getCurrentDirection());
 			if(!Arrays.equals(
 					MazeMath.booleanMask(delta),
 					exitDifference
@@ -405,7 +417,7 @@ public class BasicRobotTest {
 	 * @return whether a jump is possible towards {@code d}
 	 */
 	private boolean jumpPossible(Direction d) {
-		int[] neighbor = MazeMath.getNeighborInDirection(getRobotPosition(), d, robot.getCurrentDirection());
+		int[] neighbor = MazeMath.getNeighbor(getRobotPosition(), d, robot.getCurrentDirection());
 		
 		return (robot.getBatteryLevel()>=53 && //sufficient battery
 				robot.distanceToObstacle(d)==0 && // facing a wall at 0 distance
@@ -483,7 +495,7 @@ public class BasicRobotTest {
 			assertEquals(robot.getCurrentDirection(),MazeMath.getFrom(cd, turn));
 			
 			for(Direction d: Direction.values()) {
-				Direction newDirection = MazeMath.directionToDirection(d, turn);
+				Direction newDirection = MazeMath.getNewDirectionReferenceOverTurn(d, turn);
 				//System.out.printf("%s : %s --> %s\n",d,turn,newDirection);
 				/*
 				 * what this comparison does:
@@ -536,6 +548,140 @@ public class BasicRobotTest {
 		return false;
 	}
 	
+	private boolean disableAllSensors() {
+		boolean disabled = true;
+		for(Direction d: Direction.values()) {
+			robot.triggerSensorFailure(d);
+			disabled = (!robot.hasOperationalSensor(d)) && disabled;
+		}
+		return disabled;
+	}
+	
+	private boolean repairAllSensors() {
+		boolean repaired=true;
+		boolean reparation;
+		for(Direction d: Direction.values()) {
+			reparation=robot.repairFailedSensor(d);
+			repaired = reparation && repaired && robot.hasOperationalSensor(d);
+		}
+		return repaired;
+	}
+	
+	private RobotMove getToFirstMove() {
+		preWalk();
+		
+		RobotMove move=null;
+		for(RobotOperation op:operations) {
+			if(op instanceof RobotMove) {
+				move=(RobotMove)op;
+				break;
+			}
+			op.operateRobot(robot);
+		}
+		
+		assertTrue(null!=move);
+		
+		return move;
+	}
+	
+	private void testResetOdometer() {
+		setController(false);
+		RobotMove move = getToFirstMove();
+		move.operateRobot(robot);
+		robot.rotate(Turn.AROUND);
+		move.operateRobot(robot);
+		
+		// make sure that odometer is correct before resetting
+		assertTrue(robot.getOdometerReading()==2*move.getDistance());
+		
+		robot.resetOdometer();
+		assertTrue(robot.getOdometerReading()==0);
+	}
+	
+	private void testInterruptedSensorEnergyUsage() {
+		RobotMove move = getToFirstMove();
+		
+		int[] position = getRobotPosition();
+		
+		float referenceEnergy = robot.getBatteryLevel(), currentEnergy;
+		int moveDistance = move.getDistance();
+		float stepEnergy=robot.getEnergyForStepForward();
+		
+		assertTrue(disableAllSensors());
+		move.operateRobot(robot);
+		currentEnergy=robot.getBatteryLevel();
+		// energy to sense distances is not used, move is sole cause of energy usage
+		assertTrue(referenceEnergy - stepEnergy*moveDistance == currentEnergy);
+		
+		referenceEnergy=currentEnergy;
+		robot.rotate(Turn.AROUND);
+		currentEnergy=robot.getBatteryLevel();
+		
+		// rotation should use same energy even with disabled sensors
+		assertTrue(referenceEnergy-2*(robot.getEnergyForFullRotation()/4)==currentEnergy);
+		
+		referenceEnergy=currentEnergy;
+		
+		assertTrue(repairAllSensors());
+		
+		// take distance sensing energy back into account
+		stepEnergy += 2;
+		// test that this extra energy is being used upon re-enabling of sensors
+		currentEnergy=robot.getBatteryLevel();
+		assertTrue(currentEnergy == referenceEnergy - 4);
+		referenceEnergy = currentEnergy;
+		
+		move.operateRobot(robot);
+		currentEnergy=robot.getBatteryLevel();
+		assertTrue(currentEnergy == referenceEnergy - stepEnergy*moveDistance);
+		
+		// tampering with sensors should still lead position to be determined accurately
+		Assertions.assertArrayEquals(position, getRobotPosition());
+		
+	}
+	
+	private void testSensorInterruption() {
+		testInterruptedDistanceSensorExceptions();
+		setController(false);
+		testInterruptedRoomSensorException();
+		setController(false);
+		testInterruptedSensorEnergyUsage();
+	}
+	
+	private void testInterruptedDistanceSensorExceptions() {
+		assertTrue(disableAllSensors());
+		
+		// sensors are disabled, trying to see exit should throw exception
+		for(Direction d: Direction.values())
+			Assertions.assertThrows(UnsupportedOperationException.class, () -> robot.canSeeThroughTheExitIntoEternity(d));
+		
+		assertTrue(repairAllSensors());
+		
+		// sensors are enabled, trying to see exit should not throw exception
+		for(Direction d: Direction.values())
+			Assertions.assertDoesNotThrow(() -> robot.canSeeThroughTheExitIntoEternity(d));
+	}
+	
+	private void roomSensorEnabled() {
+		robot.enableRoomSensor();
+		assertTrue(robot.hasRoomSensor());
+		Assertions.assertDoesNotThrow(() -> robot.isInsideRoom());
+	}
+	
+	private void roomSensorDisabled() {
+		robot.nullifyRoomSensor();
+		assertFalse(robot.hasRoomSensor());
+		Assertions.assertThrows(UnsupportedOperationException.class, () -> robot.isInsideRoom());
+	}
+	
+	private void testInterruptedRoomSensorException() {
+		roomSensorEnabled();
+		roomSensorDisabled();
+		roomSensorEnabled();
+	}
+	
+	
+	
 	/**
 	 * Using the {@link #operations} list provided by {@link #tracker},
 	 * walk the robot to the exit cell of the maze.
@@ -552,13 +698,10 @@ public class BasicRobotTest {
 	private float walkToExit(boolean tryInterrupt) {
 		float initialEnergy=preWalk();
 		
-		//System.out.printf("Oriented in direction %s at position %s: starting operation sequence\n",
-		//		RobotOperationTracker.STARTING_CARDINAL_DIRECTION, Arrays.toString(getRobotPosition()));
-		
 		// walk the robot through maze up to the last operation
 		// i.e., stop before the last operation
-		
 		for(int i=0; i<operations.size()-1; i++) {
+			// if interrupted, return a nonce value
 			if(!operateRobot(operations.get(i), tryInterrupt)) {
 				return 0;
 			}
@@ -568,7 +711,8 @@ public class BasicRobotTest {
 		// it does not have to be at exit, but it has to be facing the exit
 		assertTrue(robot.canSeeThroughTheExitIntoEternity(Direction.FORWARD));
 		
-		// this moves it to the exit
+		// move distance-1, not full distance
+		// this moves it to the exit, not through the exit
 		robot.move(((RobotMove)(operations.get(operations.size()-1))).getDistance()-1, false);
 		assert robot.isAtExit();
 		
@@ -664,6 +808,13 @@ public class BasicRobotTest {
 		// design motivation: test functionality that robot can exit maze
 		// with exactly the right amount of energy, requiring no excess
 		assertTrue(0==robot.getBatteryLevel());
+		
+		//robot is not at exit, but outside
+		assertFalse(robot.isAtExit());
+		
+		// check that room check returns false, even though room sensor is functional
+		assertTrue(robot.hasRoomSensor());
+		assertFalse(robot.isInsideRoom());
 	}
 	
 	/**
@@ -917,7 +1068,7 @@ public class BasicRobotTest {
 	 */
 	private void assertExitSight() {
 		for(Direction d: Direction.values()) {
-			CardinalDirection cd = MazeMath.DirectionToCardinalDirection(d, robot.getCurrentDirection());
+			CardinalDirection cd = MazeMath.convertDirs(d, robot.getCurrentDirection());
 			int[] delta = cd.getDirection();
 			boolean exitSight = robot.canSeeThroughTheExitIntoEternity(d);
 			
@@ -999,63 +1150,188 @@ public class BasicRobotTest {
 	}
 	
 	/**
-	 * Test the direction conversion methods from {@link comp.MazeMath}.
+	 * Test methods from {@link comp.MazeMath}.
 	 * 
-	 * TODO move this into a new test class designed specifically for {@link comp.MazeMath}
+	 * Going forward I might move this into a new test class.
 	 */
 	@Test
 	public void mathTest() {
 		Direction forward=Direction.FORWARD, backward=Direction.BACKWARD, left=Direction.LEFT, right=Direction.RIGHT;
 		CardinalDirection north=CardinalDirection.North, south=CardinalDirection.South, east=CardinalDirection.East, west=CardinalDirection.West;
 		
-		assertEquals(MazeMath.DirectionToCardinalDirection(forward,east),east);
-		assertEquals(MazeMath.DirectionToCardinalDirection(forward,north),north);
-		assertEquals(MazeMath.DirectionToCardinalDirection(forward,south),south);
-		assertEquals(MazeMath.DirectionToCardinalDirection(forward,west),west);
-		assertEquals(MazeMath.DirectionToCardinalDirection(backward,north),south);
-		assertEquals(MazeMath.DirectionToCardinalDirection(backward,south),north);
-		assertEquals(MazeMath.DirectionToCardinalDirection(backward,east),west);
-		assertEquals(MazeMath.DirectionToCardinalDirection(backward,west),east);
-		assertEquals(MazeMath.DirectionToCardinalDirection(left,north),east);
-		assertEquals(MazeMath.DirectionToCardinalDirection(left,east),south);
-		assertEquals(MazeMath.DirectionToCardinalDirection(left,south),west);
-		assertEquals(MazeMath.DirectionToCardinalDirection(left,west),north);
-		assertEquals(MazeMath.DirectionToCardinalDirection(right,east),north);
-		assertEquals(MazeMath.DirectionToCardinalDirection(right,south),east);
-		assertEquals(MazeMath.DirectionToCardinalDirection(right,west),south);
-		assertEquals(MazeMath.DirectionToCardinalDirection(right,north),west);
+		// convert relative to absolute direction
+		assertEquals(MazeMath.convertDirs(forward,east),east);
+		assertEquals(MazeMath.convertDirs(forward,north),north);
+		assertEquals(MazeMath.convertDirs(forward,south),south);
+		assertEquals(MazeMath.convertDirs(forward,west),west);
+		assertEquals(MazeMath.convertDirs(backward,north),south);
+		assertEquals(MazeMath.convertDirs(backward,south),north);
+		assertEquals(MazeMath.convertDirs(backward,east),west);
+		assertEquals(MazeMath.convertDirs(backward,west),east);
+		assertEquals(MazeMath.convertDirs(left,north),east);
+		assertEquals(MazeMath.convertDirs(left,east),south);
+		assertEquals(MazeMath.convertDirs(left,south),west);
+		assertEquals(MazeMath.convertDirs(left,west),north);
+		assertEquals(MazeMath.convertDirs(right,east),north);
+		assertEquals(MazeMath.convertDirs(right,south),east);
+		assertEquals(MazeMath.convertDirs(right,west),south);
+		assertEquals(MazeMath.convertDirs(right,north),west);
 		
-		assertEquals(MazeMath.CardinalDirectionToDirection(east,east),forward);
-		assertEquals(MazeMath.CardinalDirectionToDirection(north,north),forward);
-		assertEquals(MazeMath.CardinalDirectionToDirection(west,west),forward);
-		assertEquals(MazeMath.CardinalDirectionToDirection(south,south),forward);
-		assertEquals(MazeMath.CardinalDirectionToDirection(south,north),backward);
-		assertEquals(MazeMath.CardinalDirectionToDirection(north,south),backward);
-		assertEquals(MazeMath.CardinalDirectionToDirection(west,east),backward);
-		assertEquals(MazeMath.CardinalDirectionToDirection(east,west),backward);
-		assertEquals(MazeMath.CardinalDirectionToDirection(east,north),left);
-		assertEquals(MazeMath.CardinalDirectionToDirection(south,east),left);
-		assertEquals(MazeMath.CardinalDirectionToDirection(west,south),left);
-		assertEquals(MazeMath.CardinalDirectionToDirection(north,west),left);
-		assertEquals(MazeMath.CardinalDirectionToDirection(north,east),right);
-		assertEquals(MazeMath.CardinalDirectionToDirection(east,south),right);
-		assertEquals(MazeMath.CardinalDirectionToDirection(south,west),right);
-		assertEquals(MazeMath.CardinalDirectionToDirection(west,north),right);
+		// convert relative to absolute direction in terms of (x,y) delta
+		assertArrayEquals(MazeMath.directionToDelta(forward,east),east.getDirection());
+		assertArrayEquals(MazeMath.directionToDelta(forward,north),north.getDirection());
+		assertArrayEquals(MazeMath.directionToDelta(forward,south),south.getDirection());
+		assertArrayEquals(MazeMath.directionToDelta(forward,west),west.getDirection());
+		assertArrayEquals(MazeMath.directionToDelta(backward,north),south.getDirection());
+		assertArrayEquals(MazeMath.directionToDelta(backward,south),north.getDirection());
+		assertArrayEquals(MazeMath.directionToDelta(backward,east),west.getDirection());
+		assertArrayEquals(MazeMath.directionToDelta(backward,west),east.getDirection());
+		assertArrayEquals(MazeMath.directionToDelta(left,north),east.getDirection());
+		assertArrayEquals(MazeMath.directionToDelta(left,east),south.getDirection());
+		assertArrayEquals(MazeMath.directionToDelta(left,south),west.getDirection());
+		assertArrayEquals(MazeMath.directionToDelta(left,west),north.getDirection());
+		assertArrayEquals(MazeMath.directionToDelta(right,east),north.getDirection());
+		assertArrayEquals(MazeMath.directionToDelta(right,south),east.getDirection());
+		assertArrayEquals(MazeMath.directionToDelta(right,west),south.getDirection());
+		assertArrayEquals(MazeMath.directionToDelta(right,north),west.getDirection());
 		
-		assertEquals(MazeMath.directionToDirection(left, Turn.RIGHT),backward);
-		assertEquals(MazeMath.directionToDirection(left, Turn.LEFT),forward);
-		assertEquals(MazeMath.directionToDirection(left, Turn.AROUND),right);
-		assertEquals(MazeMath.directionToDirection(right, Turn.RIGHT),forward);
-		assertEquals(MazeMath.directionToDirection(right, Turn.LEFT),backward);
-		assertEquals(MazeMath.directionToDirection(right, Turn.AROUND),left);
-		assertEquals(MazeMath.directionToDirection(forward, Turn.RIGHT),left);
-		assertEquals(MazeMath.directionToDirection(forward, Turn.LEFT),right);
-		assertEquals(MazeMath.directionToDirection(forward, Turn.AROUND),backward);
-		assertEquals(MazeMath.directionToDirection(backward, Turn.RIGHT),right);
-		assertEquals(MazeMath.directionToDirection(backward, Turn.LEFT),left);
-		assertEquals(MazeMath.directionToDirection(backward, Turn.AROUND),forward);
+		// convert absolute to relative direction
+		assertEquals(MazeMath.convertDirs(east,east),forward);
+		assertEquals(MazeMath.convertDirs(north,north),forward);
+		assertEquals(MazeMath.convertDirs(west,west),forward);
+		assertEquals(MazeMath.convertDirs(south,south),forward);
+		assertEquals(MazeMath.convertDirs(south,north),backward);
+		assertEquals(MazeMath.convertDirs(north,south),backward);
+		assertEquals(MazeMath.convertDirs(west,east),backward);
+		assertEquals(MazeMath.convertDirs(east,west),backward);
+		assertEquals(MazeMath.convertDirs(east,north),left);
+		assertEquals(MazeMath.convertDirs(south,east),left);
+		assertEquals(MazeMath.convertDirs(west,south),left);
+		assertEquals(MazeMath.convertDirs(north,west),left);
+		assertEquals(MazeMath.convertDirs(north,east),right);
+		assertEquals(MazeMath.convertDirs(east,south),right);
+		assertEquals(MazeMath.convertDirs(south,west),right);
+		assertEquals(MazeMath.convertDirs(west,north),right);
 		
-		System.out.println("finished directional conversion checks");
+		// calculate how relative direction reference changes over turn
+		assertEquals(MazeMath.getNewDirectionReferenceOverTurn(left, Turn.RIGHT),backward);
+		assertEquals(MazeMath.getNewDirectionReferenceOverTurn(left, Turn.LEFT),forward);
+		assertEquals(MazeMath.getNewDirectionReferenceOverTurn(left, Turn.AROUND),right);
+		assertEquals(MazeMath.getNewDirectionReferenceOverTurn(right, Turn.RIGHT),forward);
+		assertEquals(MazeMath.getNewDirectionReferenceOverTurn(right, Turn.LEFT),backward);
+		assertEquals(MazeMath.getNewDirectionReferenceOverTurn(right, Turn.AROUND),left);
+		assertEquals(MazeMath.getNewDirectionReferenceOverTurn(forward, Turn.RIGHT),left);
+		assertEquals(MazeMath.getNewDirectionReferenceOverTurn(forward, Turn.LEFT),right);
+		assertEquals(MazeMath.getNewDirectionReferenceOverTurn(forward, Turn.AROUND),backward);
+		assertEquals(MazeMath.getNewDirectionReferenceOverTurn(backward, Turn.RIGHT),right);
+		assertEquals(MazeMath.getNewDirectionReferenceOverTurn(backward, Turn.LEFT),left);
+		assertEquals(MazeMath.getNewDirectionReferenceOverTurn(backward, Turn.AROUND),forward);
+		
+		// swapping between relative directions with indices
+		assertEquals(MazeMath.getFrom(forward, 0),forward);
+		assertEquals(MazeMath.getFrom(forward, 1),right);
+		assertEquals(MazeMath.getFrom(forward, 2),backward);
+		assertEquals(MazeMath.getFrom(forward, 3),left);
+		assertEquals(MazeMath.getFrom(right, 0),right);
+		assertEquals(MazeMath.getFrom(right, 1),backward);
+		assertEquals(MazeMath.getFrom(right, 2),left);
+		assertEquals(MazeMath.getFrom(right, 3),forward);
+		assertEquals(MazeMath.getFrom(backward, 0),backward);
+		assertEquals(MazeMath.getFrom(backward, 1),left);
+		assertEquals(MazeMath.getFrom(backward, 2),forward);
+		assertEquals(MazeMath.getFrom(backward, 3),right);
+		assertEquals(MazeMath.getFrom(left, 0),left);
+		assertEquals(MazeMath.getFrom(left, 1),forward);
+		assertEquals(MazeMath.getFrom(left, 2),right);
+		assertEquals(MazeMath.getFrom(left, 3),backward);
+		// check that modulo arithmetic is in place
+		assertEquals(MazeMath.getFrom(forward, 4),forward);
+		assertEquals(MazeMath.getFrom(forward, -3),right);
+		assertEquals(MazeMath.getFrom(forward, -2),backward);
+		assertEquals(MazeMath.getFrom(forward, -1),left);
+		assertEquals(MazeMath.getFrom(right, 4),right);
+		assertEquals(MazeMath.getFrom(right, -3),backward);
+		assertEquals(MazeMath.getFrom(right, -2),left);
+		assertEquals(MazeMath.getFrom(right, -1),forward);
+		assertEquals(MazeMath.getFrom(backward, 4),backward);
+		assertEquals(MazeMath.getFrom(backward, -3),left);
+		assertEquals(MazeMath.getFrom(backward, -2),forward);
+		assertEquals(MazeMath.getFrom(backward, -1),right);
+		assertEquals(MazeMath.getFrom(left, 4),left);
+		assertEquals(MazeMath.getFrom(left, -3),forward);
+		assertEquals(MazeMath.getFrom(left, -2),right);
+		assertEquals(MazeMath.getFrom(left, -1),backward);
+		// swapping between relative directions with turns
+		assertEquals(MazeMath.getFrom(forward, Turn.RIGHT),right);
+		assertEquals(MazeMath.getFrom(forward, Turn.AROUND),backward);
+		assertEquals(MazeMath.getFrom(forward, Turn.LEFT),left);
+		assertEquals(MazeMath.getFrom(right, Turn.RIGHT),backward);
+		assertEquals(MazeMath.getFrom(right, Turn.AROUND),left);
+		assertEquals(MazeMath.getFrom(right, Turn.LEFT),forward);
+		assertEquals(MazeMath.getFrom(backward, Turn.RIGHT),left);
+		assertEquals(MazeMath.getFrom(backward, Turn.AROUND),forward);
+		assertEquals(MazeMath.getFrom(backward, Turn.LEFT),right);
+		assertEquals(MazeMath.getFrom(left, Turn.RIGHT),forward);
+		assertEquals(MazeMath.getFrom(left, Turn.AROUND),right);
+		assertEquals(MazeMath.getFrom(left, Turn.LEFT),backward);
+		
+		// swapping between absolute directions with turns
+		assertEquals(MazeMath.getFrom(west, Turn.RIGHT),south);
+		assertEquals(MazeMath.getFrom(west, Turn.AROUND),east);
+		assertEquals(MazeMath.getFrom(west, Turn.LEFT),north);
+		assertEquals(MazeMath.getFrom(south, Turn.RIGHT),east);
+		assertEquals(MazeMath.getFrom(south, Turn.AROUND),north);
+		assertEquals(MazeMath.getFrom(south, Turn.LEFT),west);
+		assertEquals(MazeMath.getFrom(east, Turn.RIGHT),north);
+		assertEquals(MazeMath.getFrom(east, Turn.AROUND),west);
+		assertEquals(MazeMath.getFrom(east, Turn.LEFT),south);
+		assertEquals(MazeMath.getFrom(north, Turn.RIGHT),west);
+		assertEquals(MazeMath.getFrom(north, Turn.AROUND),south);
+		assertEquals(MazeMath.getFrom(north, Turn.LEFT),east);
+		
+		// add arrays: order does not matter
+		assertArrayEquals(MazeMath.addArrays(new int[] {1,2}, new int[] {100,200}), new int[] {101,202});
+		assertArrayEquals(MazeMath.addArrays(new int[] {100,200}, new int[] {1,2}), new int[] {101,202});
+		assertArrayEquals(MazeMath.addArrays(new int[] {100,200}, new int[] {-1,-2}), new int[] {99,198});
+		assertArrayEquals(MazeMath.addArrays(new int[] {-1,-2}, new int[] {100,200}), new int[] {99,198});
+		//subtract arrays: order matters
+		assertArrayEquals(MazeMath.subArrays(new int[] {1,2}, new int[] {100,200}), new int[] {-99,-198});
+		assertArrayEquals(MazeMath.subArrays(new int[] {100,200}, new int[] {1,2}), new int[] {99,198});
+		assertArrayEquals(MazeMath.subArrays(new int[] {100,200}, new int[] {-1,-2}), new int[] {101,202});
+		assertArrayEquals(MazeMath.subArrays(new int[] {-1,-2}, new int[] {100,200}), new int[] {-101,-202});
+		
+		// boolean mask: check that any value !=0 yields true, 0 yields false
+		assertArrayEquals(MazeMath.booleanMask(new int[] {-1,-2}), new boolean[] {true,true});
+		assertArrayEquals(MazeMath.booleanMask(new int[] {1,2}), new boolean[] {true,true});
+		assertArrayEquals(MazeMath.booleanMask(new int[] {10,0}), new boolean[] {true,false});
+		assertArrayEquals(MazeMath.booleanMask(new int[] {0,100}), new boolean[] {false,true});
+		assertArrayEquals(MazeMath.booleanMask(new int[] {0,-123}), new boolean[] {false,true});
+		assertArrayEquals(MazeMath.booleanMask(new int[] {-1234,0}), new boolean[] {true,false});
+		
+		System.out.println("finished MazeMath checks");
+	}
+	
+	/**
+	 * Test methods from {@link comp.ExtendedList}.
+	 * 
+	 * Going forward I might move this into a new test class.
+	 */
+	@Test
+	public void testExtendedList() {
+		ExtendedList<Integer> list = ExtendedList.from(0,1,2,3,4);
+		for(int i: list) {
+			for(int j: list) {
+				// because the list is an integer range starting at 0,
+				// the elements are equal to the indices of the elements, and so
+				// the distance between elements = the distance between element values
+				assertTrue( list.getFrom(i, j-i) == j);
+				assertTrue( list.getDistanceFromTo(i, j) == j-i);
+				assertTrue( list.getDistanceFromToMod(i, j) == Math.floorMod(j-i, list.size()));
+			}
+		}
+		assertTrue(list.getLast()==4);
+		
+		System.out.println("finished ExtendedList checks");
 	}
 }
 
@@ -1070,7 +1346,7 @@ public class BasicRobotTest {
  * must be performed by the robot to move in that direction.
  * 
  * Some of this code may prove
- * useful to refactor into a RobotDriver.
+ * useful to refactor into a {@link RobotDriver}.
  * 
  * @author Elijah Mas
  *
@@ -1151,19 +1427,23 @@ class RobotOperationTracker {
 		init(maze);
 	}
 	
-	/**
+	/*
 	 * Provide a {@link #maze} and {@link #robot} for the tracker to store
 	 * @param maze a maze
 	 * @param robot a robot
-	 */
 	public RobotOperationTracker(Maze maze, Robot robot){
 		setRobot(robot);
 		init(maze);
 	}
+	 **/
 	
+	/*
+	 * Set the tracker's robot field.
+	 * @param robot a {@link Robot} instance
 	public void setRobot(Robot robot) {
 		this.robot=robot;
 	}
+	 **/
 	
 	/*public void clearRobot() {
 		robot=null;
@@ -1267,14 +1547,14 @@ class RobotOperationTracker {
 		operations.add(new RobotRotation(turn));
 	}
 	
-	/**
+	/*
 	 * wrapper around {@link Robot#getCurrentPosition()} that handles exception throw
 	 * @return position if no exception, otherwise null
-	 */
 	private int[] getRobotPosition() {
 		try {return robot.getCurrentPosition();}
 		catch(Exception e) {return null;}
 	}
+	 **/
 	
 	/**
 	 * Calculate which cell the tracker should move to next,
@@ -1303,7 +1583,7 @@ class RobotOperationTracker {
 		cdNext = CardinalDirection.getDirection(deltaNext[0], deltaNext[1]);
 		
 		// convert to relative direction and return
-		return MazeMath.CardinalDirectionToDirection(cdNext, currentDirection);
+		return MazeMath.convertDirs(cdNext, currentDirection);
 	}
 	
 	/**
@@ -1348,7 +1628,7 @@ class RobotOperationTracker {
 		// get the relative direction required to move out of the maze
 		// add the operation corresonding to this direction
 		CardinalDirection cd = MazeMath.getCardinalDirectionOfMazeExit(maze);
-		d=MazeMath.CardinalDirectionToDirection(cd, currentDirection);
+		d=MazeMath.convertDirs(cd, currentDirection);
 		add(d);
 		
 		// this list will no longer be updated, so release unneeded memory
@@ -1392,7 +1672,8 @@ class RobotOperationTracker {
 	private boolean testManhattanDistanceIsOne(int x, int y, int[] currentPosition) {
 		int d=MazeMath.manhattanDistance(x, y, currentPosition);
 		if(1==d) return true;
-		else System.out.printf(
+		else
+			System.out.printf(
 				"a single move should have manhattan distance 1, but we have: "
 				+ "[%d, %d] <--> %s\n", x, y, Arrays.toString(currentPosition));
 		return false;
@@ -1402,7 +1683,6 @@ class RobotOperationTracker {
 	 * Return a convenient string representation of the series of {@link #operations}
 	 * established by the tracker
 	 * @return condensed string representing {@link #operations}
-	 */
 	public String operationsString() {
 		String s="";
 		String space=" - ";
@@ -1413,6 +1693,7 @@ class RobotOperationTracker {
 		}
 		return s;
 	}
+	 **/
 	
 	/*
 	 * Condense a {@link Turn} name to one letter.
@@ -1422,7 +1703,6 @@ class RobotOperationTracker {
 	 * 
 	 * @param t a {@link Turn} value
 	 * @return the first letter of the value's name
-	 */
 	private String shortTurnName(Turn t) {
 		switch(t) {
 			case LEFT: return "L";
@@ -1431,6 +1711,7 @@ class RobotOperationTracker {
 			}
 		return null;
 	}
+	 **/
 	
 }
 
@@ -1490,10 +1771,12 @@ class RobotMove extends RobotOperation{
 		robot.move(distance, false);
 	}
 	
+	/*
 	@Override
 	public String toString() {
 		return String.format("Move(%d)",distance);
 	}
+	*/
 }
 
 /**
@@ -1528,8 +1811,10 @@ class RobotRotation extends RobotOperation{
 		}
 	}
 	
+	/*
 	@Override
 	public String toString() {
 		return String.format("Rotation<%s>",turn);
 	}
+	*/
 }

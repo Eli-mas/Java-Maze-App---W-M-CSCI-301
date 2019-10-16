@@ -36,6 +36,11 @@ import generation.Order.Builder;
  * Paul Falstad granted permission to modify and use code for teaching purposes.
  * Refactored by Peter Kemper.</p>
  * 
+ * <p>Controller holds the keyDown mechanism, but when a robot is enabled
+ * it will defer to the robot with this method, in which case
+ * the down button is ignored. The robot then instructs the Controller
+ * to update the GUI upon completion of operations or errors.</p>
+ * 
  * @author Peter Kemper
  */
 public class Controller {
@@ -274,8 +279,8 @@ public class Controller {
 				try {
 					robot.jump();
 				} catch (Exception e) {
-					// TODO switch to game end screen
-					e.printStackTrace();
+					// e.printStackTrace();
+					System.out.println("invalid jump attempted: game ending");
 				}
 				break;
 			case Down:

@@ -6,9 +6,9 @@ import java.util.ArrayList;
  * This class extends {@link ArrayList} to provide additional
  * useful functionalities.
  * 
- * @author HomeFolder
+ * @author ElijahMas
  *
- * @param <T>
+ * @param <T> the type of the objects contained in the list
  */
 public class ExtendedList<T> extends ArrayList<T>{
 
@@ -31,6 +31,14 @@ public class ExtendedList<T> extends ArrayList<T>{
 		return get(size()-1);
 	}
 	
+	/**
+	 * Construct a new {@link ExtendedList} from a
+	 * variable number of arguments.
+	 * 
+	 * @param <T> object type
+	 * @param args objects to compose the list
+	 * @return the new list with the input objects
+	 */
 	@SafeVarargs
 	public static <T> ExtendedList<T> from (T... args) {
 		ExtendedList<T> list = new ExtendedList<T>(args.length);
