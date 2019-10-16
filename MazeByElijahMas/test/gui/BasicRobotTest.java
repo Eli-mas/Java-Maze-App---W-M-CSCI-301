@@ -1,6 +1,7 @@
 package gui;
 
 import static org.junit.Assert.*;
+import org.junit.jupiter.api.Assertions;
 
 import java.awt.event.KeyEvent;
 import java.util.ArrayList;
@@ -32,6 +33,16 @@ import gui.Robot.Turn;
 import comp.ExtendedList;
 
 /**
+ * BasicRobotTest provides a mix of black-box and white-box testing of the
+ * BasicRobot class. It maintains a robot field and is aware that this
+ * robot is a BasicRobot.
+ * 
+ * It also instantiates instances of {@link Floorplan}, {@link Distance},
+ * and {@link Maze} classes for the robot to navigate, which serves as the
+ * basis of testing.
+ * 
+ * Additional testing via in-line {@code assert} statements are located in
+ * {@link BasicRobot}.
  * 
  * @author Elijah Mas
  *
@@ -57,6 +68,9 @@ public class BasicRobotTest {
 	 * @param perfect whether or not the maze should be perfect
 	 */
 	private void instantiateApplication(int level, boolean perfect) {
+		// for testing we treat the robot as being automatically operated
+		//BasicRobot.manualOperation=false;
+		
 		// we don't want energy running out when not commanded explicitly
 		// but if we make this value too large,
 		// we will encounter precision-related errors
@@ -83,7 +97,7 @@ public class BasicRobotTest {
 	 * @param level level of the maze to be generated
 	 * @param perfect whether or not the maze should be perfect
 	 */
-	public void buildNewMaze(int level, boolean perfect) {
+	private void buildNewMaze(int level, boolean perfect) {
 		instantiateApplication(level, perfect);
 		assertTrue(null!=maze);
 		
@@ -97,8 +111,7 @@ public class BasicRobotTest {
 	 * Cleanup method: sets values to null so that
 	 * the test class has no memory of data from the previous maze.
 	 */
-	//@After
-	public void resetFields() {
+	private void resetFields() {
 		//System.out.println("resetting fields");
 		resetState();
 		maze=null;
@@ -115,7 +128,7 @@ public class BasicRobotTest {
 	 * Used to allow a series of tests to be run on a maze
 	 * with a fresh controller/robot pair for each test.
 	 */
-	public void resetState() {
+	private void resetState() {
 		control=null;
 		robot=null;
 	}
@@ -123,8 +136,10 @@ public class BasicRobotTest {
 	/**
 	 * Using the current {@link #maze} field, set a controller
 	 * to start a playing state from this maze.
+	 * 
+	 * @param justEnoughEnergy whether or not to leave the robot just enough energy to exit the maze
 	 */
-	public void setController(boolean justEnoughEnergy) {
+	private void setController(boolean justEnoughEnergy) {
 		setController(maze,justEnoughEnergy);
 	}
 	
@@ -134,7 +149,7 @@ public class BasicRobotTest {
 	 * 
 	 * @param maze the maze of interest
 	 */
-	public void setController(Maze maze, boolean justEnoughEnergy) {
+	private void setController(Maze maze, boolean justEnoughEnergy) {
 		resetState();
 		control = new Controller(true);
 		control.turnOffGraphics();
@@ -186,7 +201,7 @@ public class BasicRobotTest {
 	 * @param level level of the maze
 	 * @param perfect whether or not the maze should be perfect
 	 */
-	public void testMaze(int level, boolean perfect) {
+	private void testMaze(int level, boolean perfect) {
 		buildNewMaze(level, perfect);
 		
 		energyUsageToExit = walkToExit();
@@ -216,9 +231,9 @@ public class BasicRobotTest {
 		testBadJump();
 		
 		
+		walkToExitWithDisabledSensors();
+		
 		setController(true);
-		
-		
 		resetFields();
 	}
 	
@@ -243,7 +258,7 @@ public class BasicRobotTest {
 		
 		if(runOutOfEnergyFirst) robot.setBatteryLevel(robot.getEnergyForStepForward()-1);
 		// walk into the wall
-		robot.move(1, true);
+		robot.move(1, false);
 		
 		// verify that robot has stopped and game has ended
 		assertTrue(robot.hasStopped());
@@ -263,7 +278,7 @@ public class BasicRobotTest {
 	private void approachWall(Direction d) {
 		int wallDistance = robot.distanceToObstacle(d);
 		faceDirection(d,robot);
-		robot.move(wallDistance, true);
+		robot.move(wallDistance, false);
 		assertEquals(0, robot.distanceToObstacle(Direction.FORWARD));
 	}
 	
@@ -327,7 +342,7 @@ public class BasicRobotTest {
 	 * @param d a {@link Direction} value
 	 * @param robot the robot to rotate
 	 */
-	public static void faceDirection(Direction d, Robot robot) {
+	private static void faceDirection(Direction d, Robot robot) {
 		switch(d) {
 			case FORWARD: return;
 			case LEFT: robot.rotate(Turn.LEFT); return;
@@ -339,7 +354,7 @@ public class BasicRobotTest {
 	/**
 	 * Walk the robot to the exit cell and then leave the maze.
 	 */
-	public void fullMazeWalk() {
+	private void fullMazeWalk() {
 		// get to the exit
 		walkToExit();
 		// leave maze
@@ -350,20 +365,16 @@ public class BasicRobotTest {
 	 * Walk the robot to the exit cell and then leave the maze
 	 * by attempting a jump.
 	 */
-	public void fullMazeWalk_LeaveByJump() {
+	private void fullMazeWalk_LeaveByJump() {
 		// get to the exit
 		walkToExit();
 		// leave maze by attempting jump
 		moveOutExitByJump();
 	}
 	
-	private void testNonOperationalSensorsDoNotUseEnergy() {
-		// TODO if a side sensor is disabled and the robot moves forward,
-		// it does not use the energy associated with that sensor
-	}
-	
 	/**
-	 * Prepares the robot to walk through the maze.
+	 * Prepares the robot to walk through the maze in sync with
+	 * the {@link #tracker}. Keeps track of initial energy level.
 	 * @return initial energy level of the robot
 	 */
 	private float preWalk() {
@@ -382,10 +393,10 @@ public class BasicRobotTest {
 	
 	/**
 	 * Tell whether a jump is possible in a given direction.
-	 * Requires:
+	 * True if all conditions are met:
 	 *   <ul>
 	 *     <li> sufficient energy </li>
-	 *     <li> wall immediaetly in front </li>
+	 *     <li> wall immediately in front </li>
 	 *     <li> not jumping out of maze </li>
 	 *   </ul>
 	 * 
@@ -406,7 +417,7 @@ public class BasicRobotTest {
 	 * Get the distances to obstacles in all directions
 	 * as a list in right-moving order starting at forward.
 	 */
-	public ArrayList<Integer> getDistancesList() {
+	private ArrayList<Integer> getDistancesList() {
 		ArrayList<Integer> list = new ArrayList<Integer>(4);
 		for(Direction d: MazeMath.ForwardRightBackwardLeft) {
 			list.add(robot.distanceToObstacle(d));
@@ -558,10 +569,82 @@ public class BasicRobotTest {
 		assertTrue(robot.canSeeThroughTheExitIntoEternity(Direction.FORWARD));
 		
 		// this moves it to the exit
-		robot.move(((RobotMove)(operations.get(operations.size()-1))).getDistance()-1, true);
+		robot.move(((RobotMove)(operations.get(operations.size()-1))).getDistance()-1, false);
 		assert robot.isAtExit();
 		
 		return initialEnergy-robot.getBatteryLevel();
+	}
+	
+	/**
+	 * Call {@link #walkToExitWithDisabledSensors(boolean)} for
+	 * input values of {@code true} and {@code false}.
+	 */
+	private void walkToExitWithDisabledSensors() {
+		setController(false);
+		walkToExitWithDisabledSensors(true);
+		setController(false);
+		walkToExitWithDisabledSensors(false);
+	}
+	
+	/**
+	 * Walk through the maze and exit, but disable certain sensors
+	 * and check that things behave as expected.
+	 * The side sensors are always disabled for this method;
+	 * the front and back sensors can be disabled, and
+	 * nothing should change.
+	 * 
+	 * @param disableForwardBackward whether or not to disable front and back sensors
+	 */
+	private void walkToExitWithDisabledSensors(boolean disableForwardBackward) {
+		preWalk();
+		
+		// we will want to track how much energy is used;
+		// these are setup variables to that end
+		float initialEnergy=robot.getBatteryLevel();
+		float expectedUsage=0;
+		float rotationEnergy=robot.getEnergyForFullRotation()/4;
+		
+		robot.triggerSensorFailure(Direction.LEFT);
+		robot.triggerSensorFailure(Direction.RIGHT);
+		
+		// should not affect any of subsequent assertions
+		if(disableForwardBackward) {
+			robot.triggerSensorFailure(Direction.FORWARD);
+			robot.triggerSensorFailure(Direction.BACKWARD);
+		}
+		float expectedDifference=0;
+		
+		for(int i=0; i<operations.size(); i++) {
+			RobotOperation op = operations.get(i);
+			op.operateRobot(robot);
+			
+			if(op instanceof RobotMove) {
+				// now we only use move distance, not sensor energy,
+				// because sensors are disabled
+				expectedDifference=
+					((RobotMove) op).getDistance() *
+					robot.getEnergyForStepForward();
+				// not operational --> throw exception
+				Assertions.assertThrows(Exception.class, () -> robot.distanceToObstacle(Direction.LEFT));
+				Assertions.assertThrows(Exception.class, () -> robot.distanceToObstacle(Direction.RIGHT));
+			}
+			else if(op instanceof RobotRotation) {
+				//rotations function normally
+				expectedDifference=
+					rotationEnergy *
+					Math.abs(MazeMath.getTurnIndex(((RobotRotation) op).getTurn()));
+			}
+			expectedUsage+=expectedDifference;
+		}
+		
+		// did we use the energy expected?
+		assertTrue(initialEnergy-robot.getBatteryLevel() == expectedUsage);
+		
+		// set battery to 0 because that is what assertOutsideMaze expects
+		// we have already verified energy usage so this is okay
+		robot.setBatteryLevel(0);
+		assertOutsideMaze();
+		
 	}
 	
 	/**
@@ -593,20 +676,11 @@ public class BasicRobotTest {
 	 * thus successfully exiting the maze.
 	 */
 	private void moveOutExitByJump() {	
-		boolean successfulExit;
+		// if the jump is bad, it throws an exception
+		Assertions.assertDoesNotThrow(() -> robot.jump());
 		
-		try {
-			robot.jump();
-			
-			//should now be outside
-			assertOutsideMaze();
-			successfulExit=true;
-		
-		} catch (Exception e) {
-			// get here if jump failed to result in move operation
-			successfulExit=false;
-		}
-		assertTrue(successfulExit);
+		// should be outside
+		assertOutsideMaze();
 	}
 	
 	/**
@@ -615,7 +689,7 @@ public class BasicRobotTest {
 	 */
 	private void moveOutExit() {	
 		// exit the maze
-		robot.move(1, true);
+		robot.move(1, false);
 		//should be outside
 		assertOutsideMaze();
 	}
@@ -705,14 +779,14 @@ public class BasicRobotTest {
 		
 		// the robot has enough energy to move, but not enough to complete distance sensing once moved
 		// check that position has changed and that energy is depleted
-		robot.move(1,true);
+		robot.move(1,false);
 		assertEnergyDepleted();
 		
 		int[] newPosition = getRobotPosition();
 		assertFalse(Arrays.equals(position,newPosition));
 		
 		// now that the robot is out of energy, a move should have no effect on position
-		robot.move(1,true);
+		robot.move(1,false);
 		assertTrue(Arrays.equals(newPosition,newPosition));
 		
 		
@@ -830,6 +904,17 @@ public class BasicRobotTest {
 		assertEquals(robot.isInsideRoom(),floorplan.isInRoom(getRobotPosition()));
 	}
 	
+	/**
+	 * Assert that the method {@link BasicRobot#canSeeThroughTheExitIntoEternity(Direction)}
+	 * works as expected.
+	 * 
+	 * When the method return {@code true},
+	 * the robot must be in at least the same row or column as the exit,
+	 * and there must be no walls in the direction to the exit.
+	 * 
+	 * When it returns false for a given direction,
+	 * there must be a wall in the given direction at some distance.
+	 */
 	private void assertExitSight() {
 		for(Direction d: Direction.values()) {
 			CardinalDirection cd = MazeMath.DirectionToCardinalDirection(d, robot.getCurrentDirection());
@@ -861,6 +946,12 @@ public class BasicRobotTest {
 		}
 	}
 	
+	/**
+	 * Assert that the robot and controller have equal orientation
+	 * (call the {@link #assertEqualOrientation()} method),
+	 * and verify that {@link BasicRobot#canSeeThroughTheExitIntoEternity(Direction)}
+	 * is functioning properly by calling {@link #assertExitSight()}.
+	 */
 	private void assertOrientation() {
 		assertEqualOrientation();
 		assertExitSight();
@@ -877,7 +968,7 @@ public class BasicRobotTest {
 	 * @param level level of the maze
 	 * @return the generated Maze instance
 	 */
-	public Controller getController(boolean perfect, boolean deterministic, int level){
+	private Controller getController(boolean perfect, boolean deterministic, int level){
 		Controller controller = new Controller(true);
 		controller.turnOffGraphics();
 		
@@ -896,12 +987,6 @@ public class BasicRobotTest {
 			buildThread.join();
 			if(!Controller.suppressUpdates) System.out.println("100");
 			
-			//this.maze=order.getMaze();
-			//this.control=controller;
-			//this.robot=(BasicRobot)control.getRobot();
-			//this.floorplan=maze.getFloorplan();
-			//this.distance=maze.getMazedists();
-			
 			controller.switchFromGeneratingToPlaying(order.getMaze());
 			
 			return controller;
@@ -912,15 +997,6 @@ public class BasicRobotTest {
 			return null;
 		}
 	}
-	
-	/*public Controller getController(boolean perfect, boolean deterministic, int level, Maze maze) {
-		Controller controller = new Controller(true);
-		controller.turnOffGraphics();
-		controller.switchFromGeneratingToPlaying(maze);
-		
-		return controller;
-		
-	}*/
 	
 	/**
 	 * Test the direction conversion methods from {@link comp.MazeMath}.
@@ -1089,9 +1165,9 @@ class RobotOperationTracker {
 		this.robot=robot;
 	}
 	
-	public void clearRobot() {
+	/*public void clearRobot() {
 		robot=null;
-	}
+	}*/
 	
 	/**
 	 * Provide the tracker with a maze and set certain members as fields

@@ -15,15 +15,25 @@ import gui.Constants.UserInput;
 
 /**
  * 
+ * <p>Basic implementation of the {@link Robot} interface.
+ * Provides functionality for an entity to navigate
+ * a maze while being aware of its orientation within the maze.
+ * In order for a robot to be present while playing a game,
+ * Controller must receive a boolean value true in its constructor
+ * to instantiate a robot.</p>
  * 
+ * <p>BasicRobot tells the GUI (Controller) to change
+ * when an operation (move, rotate, jump) is successfully performed
+ * by way of its {@link Controller#keyDown keyDown} method.</p>
  * 
- * ...
+ * <p>It receives key commands from {@link gui.SimpleKeyListener}.</p>
  * 
- * Note is is the responsibility of the Robot to tell the GUI to change
- * when an operation (move, rotate, jump) is successfully performed.
- * This includes changing the state of StatePlaying and 
+ * <p>In a forthcoming project it will be driven by a RobotDriver
+ * to explore a maze programmatically. Algorithms to be implemented:
+ * Wall-Follower &#38; Wizard.
+ * </p>
  * 
- * @author HomeFolder
+ * @author Elijah Mas
  *
  */
 public class BasicRobot implements Robot {
@@ -101,8 +111,6 @@ public class BasicRobot implements Robot {
 	 * the current absolute direction of the robot; maintained internally
 	 */
 	private CardinalDirection currentDirection;
-	
-	//private static boolean crashEnabled=true;
 	
 	/**
 	 * failure message when the robot tries to jump out of the maze
@@ -266,9 +274,6 @@ public class BasicRobot implements Robot {
 		calculateDistances();
 		
 		initialized=true;
-		//System.out.println("BasicRobot: instantiateFields completed");
-		//System.out.printf("BasicRobot: maze dimensions: %d,%d\n",width,height);
-		//System.out.println("BasicRobot: maze exit: "+Arrays.toString(distance.getExitPosition()));
 		
 		/*
 		//prospective for Project 4
@@ -290,7 +295,6 @@ public class BasicRobot implements Robot {
 	public void setMaze(Controller controller) {
 		control=controller;
 		instantiateFields();
-		//System.out.println("robot has set controller");
 	}
 	
 	
@@ -325,7 +329,7 @@ public class BasicRobot implements Robot {
 			return false;
 		}
 	}
-
+	
 	@Override
 	public boolean canSeeThroughTheExitIntoEternity(Direction direction) throws UnsupportedOperationException {
 		// must have operational sensor
@@ -343,7 +347,7 @@ public class BasicRobot implements Robot {
 					"operation 'canSeeThroughTheExitIntoEternity' failed, cannot evaluate presence in room", e);
 		}
 	}
-
+	
 	@Override
 	public boolean isInsideRoom() throws UnsupportedOperationException {
 		// must have operational sensor
@@ -561,6 +565,13 @@ public class BasicRobot implements Robot {
 			// use energies for another usage check
 			float energyBeforeMove=getBatteryLevel();
 			
+			int[] position=null;
+			try { // should not throw exception, but to satisfy compiler
+				position=getCurrentPosition();
+			} catch (Exception e1) {
+				// e1.printStackTrace();
+			}
+			
 			moveSingle(manual);
 			
 			float energyAfterMove=getBatteryLevel();
@@ -570,12 +581,22 @@ public class BasicRobot implements Robot {
 			
 			// branch on whether we have left the maze
 			try {
-				getCurrentPosition(); //throws exception if out of maze
+				int[] newPosition = getCurrentPosition(); //throws exception if out of maze
+				
+				int delta=MazeMath.manhattanDistance(position, newPosition);
+				assert (1==delta || 0==delta);
 				
 				//incrementVisitCount(currentPosition); //prospective for Project 4
 				
-				//energy used should be sum of move energy + sensing energy for both side sensors
-				assert (energyBeforeMove-energyAfterMove)==energyUsedForMove + 2*energyUsedForDistanceSensing:
+				// energy used should be sum of move energy + sensing energy for both side sensors
+				// if robot did not move (it tried to move into wall), then only move energy is used,
+				//     distances are not re-calculated
+				if(1==delta) assert (energyBeforeMove-energyAfterMove)==
+						(
+							energyUsedForMove +
+							(hasOperationalSensor(Direction.LEFT) ? 1 : 0) +
+							(hasOperationalSensor(Direction.RIGHT) ? 1 : 0)
+						):
 					energyBeforeMove+", "+energyAfterMove+" at "+Arrays.toString(currentPosition);
 			}
 			catch (Exception e) {
@@ -615,8 +636,6 @@ public class BasicRobot implements Robot {
 	 * Cause a failure if energy is depleted or the robot crashes.
 	 */
 	private void moveSingle(boolean manual){
-		// TODO how to factor in manual parameter?
-		
 		if(VERBOSE) {
 			System.out.printf("robot move: %s   -->   ",obstacleDistancesForwardRightBackwardLeft);
 		}
@@ -627,9 +646,12 @@ public class BasicRobot implements Robot {
 		
 		if(atForwardWall()) {
 			if(VERBOSE) {
-				System.out.println();
+				System.out.println("robot moving into a wall");
 			}
-			endGame(badMoveMessage);
+			if(!manual) {
+				//System.out.println("ending game");
+				endGame(badMoveMessage);
+			}
 		}
 		else {
 			//no crash here

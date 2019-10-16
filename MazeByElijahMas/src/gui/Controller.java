@@ -9,42 +9,46 @@ import generation.Order.Builder;
 
 
 /**
- * Class handles the user interaction. 
- * It implements an automaton with states for the different stages of the game.
- * It has state-dependent behavior that controls the display and reacts to key board input from a user. 
- * At this point user keyboard input is first dealt with a key listener (SimpleKeyListener)
- * and then handed over to a Controller object by way of the keyDown method.
+ * <p>Class handles the user interaction:
+ *   <ul>
+ *     <li> It implements an automaton with states for the different stages of the game.</li>
+ *     <li> It has state-dependent behavior that controls the display and reacts to key board input from a user.</li> 
+ *     <li> At this point user keyboard input is first dealt with a key listener (SimpleKeyListener)
+ *          and then handed over to a Controller object by way of the keyDown method.</li>
+ *   </ul>
  *
- * The class is part of a state pattern. It has a state object to implement
- * state-dependent behavior.
- * The automaton currently has 4 states.
- * StateTitle: the starting state where the user can pick the skill-level
- * StateGenerating: the state in which the factory computes the maze to play
- * and the screen shows a progress bar.
- * StatePlaying: the state in which the user plays the game and
- * the screen shows the first person view and the map view.
- * StateWinning: the finish screen that shows the winning message.
- * The class provides a specific method for each possible state transition,
- * for example switchFromTitleToGenerating contains code to start the maze
- * generation.
+ * <p> The class is part of a state pattern. It has a state object to implement
+ * state-dependent behavior. <ol>
+ * The automaton currently has 4 states:
+ * <li> StateTitle: the starting state where the user can pick the skill-level</li>
+ * <li> StateGenerating: the state in which the factory computes the maze to play
+ *      and the screen shows a progress bar.</li>
+ * <li> StatePlaying: the state in which the user plays the game and
+ *      the screen shows the first person view and the map view.</li>
+ * <li> StateWinning: the finish screen that shows the winning message.
+ *      The class provides a specific method for each possible state transition,
+ *      for example switchFromTitleToGenerating contains code to start the maze
+ *      generation.</li></ol>
+ * </p>
  *
- * This code is refactored code from Maze.java by Paul Falstad, 
- * www.falstad.com, Copyright (C) 1998, all rights reserved
+ * <p>This code is refactored code from Maze.java by Paul Falstad, 
+ * www.falstad.com, Copyright (C) 1998, all rights reserved.
  * Paul Falstad granted permission to modify and use code for teaching purposes.
- * Refactored by Peter Kemper
+ * Refactored by Peter Kemper.</p>
  * 
  * @author Peter Kemper
  */
 public class Controller {
 	/**
 	 * The game has a reservoir of 4 states: 
-	 * 1: show the title screen, wait for user input for skill level
-	 * 2: show the generating screen with the progress bar during 
+	 * <br>1: show the title screen, wait for user input for skill level
+	 * <br>2: show the generating screen with the progress bar during 
 	 * maze generation
-	 * 3: show the playing screen, have the user or robot driver
+	 * <br>3: show the playing screen, have the user or robot driver
 	 * play the game
-	 * 4: show the finish screen with the winning/loosing message
-	 * The array entries are set in the constructor. 
+	 * <br>4: show the finish screen with the winning/loosing message
+	 * 
+	 * <br>The array entries are set in the constructor. 
 	 * There is no mutator method.
 	 */
 	State[] states;
@@ -93,7 +97,7 @@ public class Controller {
 	/**
 	 * Whether or not the robot is operated manually
 	 */
-	boolean manualRobotOperation=false;
+	boolean manualRobotOperation=true;
 	/**
 	 * Starting energy level of the robot, used to measure energy consumption
 	 */
