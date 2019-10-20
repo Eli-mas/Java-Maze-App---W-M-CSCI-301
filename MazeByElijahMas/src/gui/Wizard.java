@@ -6,12 +6,28 @@ import comp.RobotOperationTracker;
 import generation.Distance;
 import generation.Maze;
 
-public class Wizard implements RobotDriver {
+public class Wizard extends AbstractRobotDriver {
 	
 	Robot robot;
 	int width, height;
 	Distance distance;
 	
+	ExtendedList<RobotOperation> operations;
+	Maze maze;
+	
+	
+	private void setOperations() {
+		this.operations=(ExtendedList<RobotOperation>)
+							RobotOperationTracker.getOperationsFrom(maze);
+	}
+	
+	private void basicWalk() throws Exception {
+		for(RobotOperation op: operations) {
+			op.operateRobot(robot);
+			if(robot.hasStopped()) throw new Exception("Exception in Wizard.basicWalk: "+control.getRobotFailureMessage());
+		}
+		
+	}
 	
 	
 	
@@ -24,45 +40,23 @@ public class Wizard implements RobotDriver {
 	public Wizard(Robot robot) {
 		setRobot(robot);
 	}
-	
-	@Override
-	public void setRobot(Robot r) {
-		robot=r;
-	}
 
-	@Override
-	public void setDimensions(int width, int height) {
-		this.width=width;
-		this.height=height;
-	}
-
-	@Override
-	public void setDistance(Distance distance) {
-		this.distance=distance;
-	}
-
+	/**
+	 * <b>Not implemented</b>:
+	 * the Wizard class has access to full maze data,
+	 * so there is no need to rely on sensors.
+	 *
+	 */
 	@Override
 	public void triggerUpdateSensorInformation() {
-		// TODO Auto-generated method stub
 		
 	}
 
 	@Override
 	public boolean drive2Exit() throws Exception {
-		// TODO Auto-generated method stub
-		return false;
-	}
-
-	@Override
-	public float getEnergyConsumption() {
-		// TODO Auto-generated method stub
-		return 0;
-	}
-
-	@Override
-	public int getPathLength() {
-		// TODO Auto-generated method stub
-		return 0;
+		setOperations();
+		basicWalk();
+		return tellIfOutsideMaze();
 	}
 
 }
