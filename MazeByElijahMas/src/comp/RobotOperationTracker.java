@@ -202,7 +202,7 @@ public class RobotOperationTracker {
 				// rotation added --> most recent move operation cannot be extended further
 				// reset to null and add a new move operation
 				currentMove=null;
-				Turn t = MazeMath.directionToTurn(d);
+				Turn t = MazeMath.toTurn(d);
 				
 				// if we are constantly moving closer to the exit,
 				// we should never have to backtrack

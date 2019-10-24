@@ -1,14 +1,17 @@
 package comp;
 import gui.Robot.Turn;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.PriorityQueue;
 
 import generation.CardinalDirection;
 import generation.Maze;
 import generation.Floorplan;
 import generation.Distance;
+import gui.Constants;
 import gui.Robot.Direction;
 import comp.ExtendedList;
 
@@ -143,7 +146,7 @@ public class MazeMath {
 	 * @param d a {@link Direction} value
 	 * @return the turn that will put us facing the specified direction
 	 */
-	public static Turn directionToTurn(Direction d) {
+	public static Turn toTurn(Direction d) {
 		switch(d) {
 			//case FORWARD: return null;
 			case BACKWARD: return Turn.AROUND;
@@ -151,6 +154,18 @@ public class MazeMath {
 			case RIGHT: return Turn.RIGHT;
 			default: return null;
 		}
+	}
+	
+	/**
+	 * Convert a {@link CardinalDirection} value to a {@link Turn} value;
+	 * since both values indicate some form of relative direction,
+	 * there is a one-to-one correspondence.
+	 * @param cd a {@link CardinalDirection} value
+	 * @param currentDirection the current absolute direction of reference
+	 * @return the turn that will put us facing the specified direction
+	 */
+	public static Turn toTurn(CardinalDirection cd, CardinalDirection currentDirection) {
+		return toTurn(convertDirs(cd, currentDirection));
 	}
 	
 	/**
@@ -379,6 +394,51 @@ public class MazeMath {
 			}
 		}
 		return null;
+	}
+	
+	/**
+	 * given a list of input arrays,
+	 * get a sorted array of all the unique elements
+	 * across these arrays
+	 * @param args any number of {@code int[]} arrays
+	 * @return sorted elements of the union of these arrays
+	 */
+	public static List<Integer> getUniqueSortedElements(int[]... args) {
+		PriorityQueue<Integer> sizeQueue = new PriorityQueue<Integer>();
+		
+		for(int[] array: args) {
+			for(int i: array) {
+				if(!sizeQueue.contains(i)) sizeQueue.add(i);
+			}
+		}
+		
+		ArrayList<Integer> result = new ArrayList<Integer>(sizeQueue.size());
+		
+		int index=0;
+		
+		// repeteadly remove head of queue and add to result
+		while(sizeQueue.size()>0) {
+			result.add(sizeQueue.poll());
+		}
+		
+		return result;
+	}
+	
+	/**
+	 * Return an array of given dimensions filled with zeros
+	 * @param width length along primary axis
+	 * @param height length along secondary axis
+	 * @return zero-filled array of these dimensions
+	 */
+	public static int[][] getZerosArray(int width, int height) {
+		int[][] result = new int[width][height];
+		for(int x=0; x<width; x++) {
+			for(int y=0; y<height; y++) {
+				result[x][y]=0;
+			}
+		}
+		
+		return result;
 	}
 
 }

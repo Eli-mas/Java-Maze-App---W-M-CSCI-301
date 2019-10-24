@@ -17,6 +17,10 @@ public class ExtendedList<T> extends ArrayList<T>{
 	 */
 	private static final long serialVersionUID = 1L;
 	
+	public ExtendedList() {
+		super();
+	}
+	
 	public ExtendedList(int length) {
 		super(length);
 	}

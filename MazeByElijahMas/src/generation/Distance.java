@@ -130,6 +130,16 @@ public class Distance {
 	public int getDistanceValue(int x, int y) {
 		return dists[x][y] ;
 	}
+	
+	/**
+	 * Gets the distance value for the given (x,y) position
+	 * @param xy {@code int[]{x,y}} coordinate
+	 * @return the distance value for the given (x,y) position
+	 */
+	public int getDistanceValue(int[] xy) {
+		return dists[xy[0]][xy[1]] ;
+	}
+	
 	/**
 	 * Compute distances for given cells object of a maze.
 	 * The method determines an exit position for the maze
