@@ -134,8 +134,6 @@ public class BasicRobot implements Robot {
 	 */
 	public float initialEnergyLevel=3000f;
 	
-	//private int[][] visitCounts; //prospective for Project 4
-	
 	/**
 	 * allows for printing information about robot while operating;
 	 * disabled during testing.
@@ -286,18 +284,6 @@ public class BasicRobot implements Robot {
 		calculateDistances();
 		
 		initialized=true;
-		
-		/*
-		//prospective for Project 4
-		visitCounts=new int[width][height];
-		for(int x=0; x<width; x++) {
-			for(int y=0; y<height; y++) {
-				visitCounts[x][y]=0;
-			}
-		}
-		
-		incrementVisitCount(currentPosition);
-		*/
 	}
 
 	/**
@@ -393,7 +379,7 @@ public class BasicRobot implements Robot {
 		int distance=obstacleDistancesForwardRightBackwardLeft.get(MazeMath.getDirectionIndex(direction));
 		
 		// if distance is missing, fill it
-		if(-1==distance) 
+		if(-1==distance || hasMissingSensors()) 
 			try {// this should not throw an exception, but to satisfy compiler
 				distance=calculateObstacleDistance(direction);
 			} catch (Exception e) {
@@ -402,6 +388,7 @@ public class BasicRobot implements Robot {
 			}
 		
 		return distance;
+		
 	}
 	
 	/**
@@ -462,6 +449,13 @@ public class BasicRobot implements Robot {
 		return true;
 	}
 	
+	private boolean hasMissingSensors() {
+		for(Direction d: Direction.values()) {
+			if(!hasOperationalSensor(d)) return true;
+		}
+		return false;
+	}
+	
 	/**
 	 * Rotate the robot rightwards, adjusting required fields.
 	 * Cause a failure if energy is depleted.
@@ -476,10 +470,14 @@ public class BasicRobot implements Robot {
 		// moving right is aligned with moving forward in array
 		// which means: for what was right to become the new forward,
 		// we have to rotate the array backwards
-		Collections.rotate(obstacleDistancesForwardRightBackwardLeft, -1);
+		/*if(hasMissingSensors()) Collections.rotate(obstacleDistancesForwardRightBackwardLeft, -1);
+		else {
+			if(hasStopped()) return;
+		}*/
 		
 		// convert a turn to a cardinal direction and set current direction for robot
 		currentDirection=MazeMath.getFrom(getCurrentDirection(), Turn.RIGHT);//MazeMath.turnToCardinalDirection(Turn.RIGHT, getCurrentDirection());
+		calculateDistances();
 		// sets current direction for controller
 		control.keyDown(UserInput.Right, 0);
 		
@@ -508,10 +506,14 @@ public class BasicRobot implements Robot {
 		if(!attemptEnergyDepletion(energyUsedForRotation)) return;
 		
 		// opposite of right -- see `rotateRight` above for explanation
-		Collections.rotate(obstacleDistancesForwardRightBackwardLeft, 1);
+		/*if(hasMissingSensors()) Collections.rotate(obstacleDistancesForwardRightBackwardLeft, 1);
+		else {
+			if(hasStopped()) return;
+		}*/
 		
 		// convert a turn to a cardinal direction and set current direction for robot
 		currentDirection=MazeMath.getFrom(getCurrentDirection(), Turn.LEFT);//MazeMath.turnToCardinalDirection(Turn.LEFT, getCurrentDirection());
+		calculateDistances();
 		// sets current direction for controller
 		control.keyDown(UserInput.Left, 0);
 		
@@ -522,6 +524,8 @@ public class BasicRobot implements Robot {
 	
 	@Override
 	public void rotate(Turn turn) {
+		if(null==turn) return;
+		
 		if(hasStopped()) {
 			//if(VERBOSE) System.out.println("the robot has stopped; cannot perform rotate operation");
 			return;
@@ -550,11 +554,14 @@ public class BasicRobot implements Robot {
 				expectedEnergyDifference=null;
 		}
 		
-		// if we stopped, we didn't use the expected energy; if not, we can check this
-		if(!hasStopped()) assert energyBeforeRotation-getBatteryLevel() == expectedEnergyDifference :
+		// implementation changed: distanceToObstacle now is less optimized,
+		// the following may not hold
+		
+		/*// if we stopped, we didn't use the expected energy; if not, we can check this
+		if(!hasStopped() && !hasMissingSensors()) assert energyBeforeRotation-getBatteryLevel() == expectedEnergyDifference :
 			"energy difference before/after rotation: "+
 			(energyBeforeRotation-getBatteryLevel())+
-			", exepcted: "+expectedEnergyDifference;
+			", exepcted: "+expectedEnergyDifference;*/
 	}
 	
 	private int[] catchPosition() {
@@ -600,8 +607,6 @@ public class BasicRobot implements Robot {
 				
 				int delta=MazeMath.manhattanDistance(position, newPosition);
 				assert (1==delta || 0==delta);
-				
-				//incrementVisitCount(currentPosition); //prospective for Project 4
 				
 				// energy used should be sum of move energy + sensing energy for both side sensors
 				// if robot did not move (it tried to move into wall), then only move energy is used,
@@ -659,7 +664,7 @@ public class BasicRobot implements Robot {
 		if(!attemptEnergyDepletion(energyUsedForMove)) return;
 		
 		if(atForwardWall()) {
-			//if(VERBOSE) ("robot moving into a wall");
+			System.out.println(">>>robot moving into a wall");
 			
 			if(!manual) {
 				//System.out.println("ending game");
@@ -671,7 +676,11 @@ public class BasicRobot implements Robot {
 			incrementCurrentPosition();
 			odometerReading++;
 			//System.out.printf("odometer, energy, used: %d, %.1f, %.1f\n",getOdometerReading(),getBatteryLevel(),control.getEnergyConsumedByRobotAtPresent());
+			
+			
 			changeDistancesInMoveForward();
+			
+			
 			if(hasStopped()) return;
 			
 			control.keyDown(UserInput.Up, 0);
@@ -714,6 +723,9 @@ public class BasicRobot implements Robot {
 				// and this call throws an error
 				getCurrentPosition();
 				
+				// increment odometer reading
+				odometerReading++;
+				
 				// we know that the robot must be in front of a wall
 				// i.e. distance to wall backwards is 0
 				obstacleDistancesForwardRightBackwardLeft.set(2, 0);
@@ -721,8 +733,6 @@ public class BasicRobot implements Robot {
 				calculateDistances(Direction.BACKWARD);
 				// could run out of energy here
 				if(hasStopped()) return;
-				
-				//incrementVisitCount(currentPosition); //prospective for Project 4
 				
 				// robot is finished, push changes to Controller
 				control.keyDown(UserInput.Jump, 0);
@@ -907,98 +917,6 @@ public class BasicRobot implements Robot {
 	
 	
 	
-	
-	/*
-	
-	//////////////// PLANNING FOR PROJECT 4 ////////////////
-	
-	//when ready to use, search through this document for comments including the string "Project 4"
-	
-	private boolean hasWallInDirection(Direction d) {
-		return floorplan.hasWall(
-				currentPosition[0],currentPosition[1],
-				translateCurrentDirectionToCardinalDirection(d));
-	}
-	
-	private int[] getCoordinateDelta(Direction d) {
-		return translateCurrentDirectionToCardinalDirection(d).getDirection();
-	}
-	
-	private int[] getNewCoordinateFromDirectionalMove(Direction d) {
-		return MazeMath.addArrays(currentPosition,getCoordinateDelta(d));
-	}
-	
-	private List<Direction> getMoveableDirections() {
-		ArrayList<Direction> moveableDirections = new ArrayList<Direction>(4);
-		for(Direction d: MazeMath.ForwardRightBackwardLeft) {
-			if(!hasWallInDirection(d)) moveableDirections.add(d);
-		}
-		moveableDirections.trimToSize();
-		return moveableDirections;
-	}
-	
-	private int getVisitCount(int[] coor) {
-		return visitCounts[coor[0]][coor[1]];
-	}
-	
-	private void incrementVisitCount(int[] coor) {
-		visitCounts[coor[0]][coor[1]]+=1;
-	}
-	
-	private Direction selectMoveableDirection_byMinimalVisits() {
-		// get the direction which, when the robot moves in this direction,
-		// places the robot at the cell which has the smallest visit count
-		// of the cells to which the robot can move
-		// this works even if there is only one cell the robot can move to
-		return getMoveableDirections()
-			.stream()
-			.min(
-				(d1,d2) ->
-					Integer.compare(
-						getVisitCount(getNewCoordinateFromDirectionalMove(d1)),
-						getVisitCount(getNewCoordinateFromDirectionalMove(d2))
-					)
-			).get();
-		
-	}
-	
-	private void rotateToDirection(Direction d) {
-		switch(d) {
-		case FORWARD: return;
-		case LEFT: rotate(Turn.LEFT); return;
-		case RIGHT: rotate(Turn.RIGHT); return;
-		case BACKWARD: rotate(Turn.AROUND); return;
-		}
-	}
-	
-	private void walkMoveableDirection_byMinimalVisits() {
-		rotateToDirection(selectMoveableDirection_byMinimalVisits());
-		move(1, false);
-	}
-	
-	private Direction directionToExit() {
-		for(Direction d: MazeMath.ForwardRightBackwardLeft) {
-			if(canSeeThroughTheExitIntoEternity(d)) return d;
-		}
-		return null;
-	}
-	
-	public void walkOutOfMaze_byMinimalVisits() {
-		Direction d=null;
-		while(null==d) {
-			walkMoveableDirection_byMinimalVisits();
-			d=directionToExit();
-		}
-		rotateToDirection(d);
-		while(true) {
-			move(1,false);
-			try{getCurrentPosition();}
-			catch(Exception e) {break;}
-		}
-		return;
-	}
-	
-	*/
 
 }
 

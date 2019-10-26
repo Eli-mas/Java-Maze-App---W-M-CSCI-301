@@ -33,15 +33,58 @@ class State_0001{
 	}
 }
 */
+
+class RobotSensorTrigger implements Runnable{
+	
+	Direction direction;
+	AbstractRobotDriver driver;
+	Robot robot;
+	public static int deltaT = 3000;
+	
+	public RobotSensorTrigger(AbstractRobotDriver driver, Direction direction) {
+		this.direction=direction;
+		this.driver=driver;
+		this.robot=driver.getRobot();
+	}
+	
+	public void start() {
+		
+	}
+	
+	@Override
+	public void run() {
+		while(null!=driver.getRobotPosition() && !robot.hasStopped()) {
+			boolean sensorState = robot.hasOperationalSensor(direction);
+			if(sensorState) robot.triggerSensorFailure(direction);
+			else robot.repairFailedSensor(direction);
+			try {
+				Thread.sleep(deltaT);
+			} catch (InterruptedException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
+	}
+	
+}
+
 public abstract class AbstractRobotDriver implements RobotDriver {
 	
 	Robot robot;
 	int width, height;
 	Distance distance;
 	float robotStartEnergy;
-	Controller control;
+	Controller controller;
+	CardinalDirection currentDirection;
+	int[] currentPosition;
 	
+	public String getRobotFailureMessage() {
+		return controller.getRobotFailureMessage();
+	}
 	
+	public Robot getRobot() {
+		return robot;
+	}
 	
 	boolean tellIfOutsideMaze() {
 		return null==getRobotPosition();
@@ -60,81 +103,17 @@ public abstract class AbstractRobotDriver implements RobotDriver {
 		}
 	}
 	
-	/**
-	 * Rotate the {@link #robot} until it is facing the input direction.
-	 * @param d a {@link Direction} value
-	 */
-	private void face(Direction d) {
-		Turn turn = MazeMath.toTurn(d);
-		rotate(turn);
-	}
-	
-	/**
-	 * Rotate the {@link #robot} until it is facing the input cardinal direction.
-	 * @param cd a {@link CardinalDirection} value
-	 */
-	private void face(CardinalDirection cd) {
-		Turn turn = MazeMath.toTurn(cd, robot.getCurrentDirection());
-		rotate(turn);
-	}
-	
-	private boolean[] getFunctionalSensors() {
-		boolean[] functional = new boolean[4];
-		int pos=0;
-		for(Direction d: MazeMath.ForwardRightBackwardLeft)
-			functional[pos++]=robot.hasOperationalSensor(d);
-		
-		return functional;
-	}
-	
-	private Direction getClosestFunctionalSensor(Direction d) {
-		boolean[] functional = getFunctionalSensors();
-		int index = MazeMath.getDirectionIndex(d);
-		
-		if(functional[index]) return d;
-		
-		int[] indices = new int[] {1,-1,2};
-		for(int i: indices) {
-			if(functional[Math.floorMod(index+i,4)]) return MazeMath.getFrom(d, i);
-		}
-		
-		return null;
-	}
-	
-	private Integer getDistance(Direction directionFacing) {
-		Direction directionFunctional = getClosestFunctionalSensor(directionFacing);
-		if(null==directionFunctional) return null;
-		
-		int dist = MazeMath
-					.ForwardRightBackwardLeft
-					.getDistanceFromTo(directionFacing, directionFunctional);
-		
-		faceRobot(directionFunctional);
-		
-		try{
-			return robot.distanceToObstacle(Direction.FORWARD);
-		}
-		catch (UnsupportedOperationException e) {
-			return null;
-		}
-	}
-	
-	private void walkTo(Direction d) {
-		
-	}
-	
-	private void faceRobot(Direction d) {
-		Turn turn = MazeMath.toTurn(d);
-		robot.rotate(turn);
-	}
-	
-	private void rotate(Turn turn) {
-		robot.rotate(turn);
+	public CardinalDirection getCurrentDirection() {
+		return currentDirection;
 	}
 	
 	@Override
 	public void setRobot(Robot r) {
 		robot=r;
+		currentDirection = robot.getCurrentDirection();
+		currentPosition = getRobotPosition();
+		
+		//System.out.println("setRobot called; currentDirection="+currentDirection);
 	}
 
 	@Override
