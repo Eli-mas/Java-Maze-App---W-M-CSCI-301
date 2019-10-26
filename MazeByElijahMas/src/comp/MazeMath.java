@@ -156,16 +156,27 @@ public class MazeMath {
 		}
 	}
 	
+	public static Turn toTurn(int index) {
+		switch(Math.floorMod(index, 4)){
+			case 1: return Turn.RIGHT;
+			case 2: return Turn.AROUND;
+			case 3: return Turn.LEFT;
+			default: return null;
+		}
+	}
+	
+	public static Turn toTurn(Direction from, Direction to) {
+		return toTurn(ForwardRightBackwardLeft.getDistanceFromTo(from, to));
+	}
+	
 	/**
-	 * Convert a {@link CardinalDirection} value to a {@link Turn} value;
-	 * since both values indicate some form of relative direction,
-	 * there is a one-to-one correspondence.
+	 * Convert a {@link CardinalDirection} value to a {@link Turn} value.
 	 * @param cd a {@link CardinalDirection} value
 	 * @param currentDirection the current absolute direction of reference
 	 * @return the turn that will put us facing the specified direction
 	 */
 	public static Turn toTurn(CardinalDirection cd, CardinalDirection currentDirection) {
-		return toTurn(convertDirs(cd, currentDirection));
+		return toTurn(WestSouthEastNorth.getDistanceFromTo(currentDirection, cd));//toTurn(convertDirs(cd, currentDirection));
 	}
 	
 	/**
@@ -198,6 +209,7 @@ public class MazeMath {
 	 * @return index of the turn
 	 */
 	public static int getTurnIndex(Turn t) {
+		if(null==t) return 0;
 		switch(t) {
 			case LEFT: return -1;
 			case RIGHT: return 1;

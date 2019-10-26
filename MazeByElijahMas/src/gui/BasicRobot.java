@@ -215,6 +215,10 @@ public class BasicRobot implements Robot {
 	private void setStopped() {
 		stopped=true;
 	}
+	
+	void clearStopped() {
+		stopped=false;
+	}
 
 	@Override
 	public void resetOdometer() {
@@ -368,6 +372,10 @@ public class BasicRobot implements Robot {
 	public void enableRoomSensor() {
 		roomSensorIsPresent=true;
 	}
+	
+	public void printDists() {
+		System.out.println("FRBL: "+obstacleDistancesForwardRightBackwardLeft);
+	}
 
 	@Override
 	public int distanceToObstacle(Direction direction) throws UnsupportedOperationException {
@@ -478,6 +486,7 @@ public class BasicRobot implements Robot {
 		// convert a turn to a cardinal direction and set current direction for robot
 		currentDirection=MazeMath.getFrom(getCurrentDirection(), Turn.RIGHT);//MazeMath.turnToCardinalDirection(Turn.RIGHT, getCurrentDirection());
 		calculateDistances();
+		if(hasStopped()) return;
 		// sets current direction for controller
 		control.keyDown(UserInput.Right, 0);
 		
@@ -514,6 +523,7 @@ public class BasicRobot implements Robot {
 		// convert a turn to a cardinal direction and set current direction for robot
 		currentDirection=MazeMath.getFrom(getCurrentDirection(), Turn.LEFT);//MazeMath.turnToCardinalDirection(Turn.LEFT, getCurrentDirection());
 		calculateDistances();
+		if(hasStopped()) return;
 		// sets current direction for controller
 		control.keyDown(UserInput.Left, 0);
 		
@@ -664,7 +674,7 @@ public class BasicRobot implements Robot {
 		if(!attemptEnergyDepletion(energyUsedForMove)) return;
 		
 		if(atForwardWall()) {
-			System.out.println(">>>robot moving into a wall");
+			//System.out.println(">>>robot moving into a wall");
 			
 			if(!manual) {
 				//System.out.println("ending game");

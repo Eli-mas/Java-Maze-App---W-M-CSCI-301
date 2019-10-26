@@ -115,6 +115,22 @@ public class StatePlaying extends DefaultState {
 		if(robotEnabled) controller.setupRobot();
 		if (panel != null) {
 			startDrawer();
+			if(controller.getDriver() != null) {
+				System.out.println("driving to exit");
+				try {
+					Thread.sleep(1000);
+				} catch (InterruptedException e1) {
+					// TODO Auto-generated catch block
+					e1.printStackTrace();
+				}
+				try {
+					controller.getDriver().drive2Exit();
+				} catch (Exception e) {
+					// TODO Auto-generated catch block
+					System.out.println("driver could not reach exit in maze:");
+					e.printStackTrace();
+				}
+			}
 		}
 		else {
 			// else: dry-run without graphics, most likely for testing purposes

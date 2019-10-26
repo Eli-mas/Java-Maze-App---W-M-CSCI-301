@@ -1,6 +1,7 @@
 package comp;
 
 import java.util.ArrayList;
+import java.util.List;
 
 /**
  * This class extends {@link ArrayList} to provide additional
@@ -23,6 +24,10 @@ public class ExtendedList<T> extends ArrayList<T>{
 	
 	public ExtendedList(int length) {
 		super(length);
+	}
+	
+	public ExtendedList(List<T> l) {
+		super(l);
 	}
 
 	/**

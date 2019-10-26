@@ -203,7 +203,8 @@ public class Controller {
 		if(robotEnabled){
 			//System.out.println("Controller: initializing the robot");
 			Robot new_robot = new BasicRobot();
-			setRobotAndDriver(new_robot,null);
+			RobotDriver new_driver = new Wizard();
+			setRobotAndDriver(new_robot,new_driver);
 			//setupRobot()
 			// can't do this here--
 			// StatePlaying has not initialized the current position/direction
@@ -228,6 +229,9 @@ public class Controller {
 	protected void setupRobot() {
 		robot.setMaze(this);
 		setInitialRobotEnergyLevel(robot.getBatteryLevel());
+		RobotDriver driver = getDriver();
+		if(null != driver) driver.setRobot(robot);
+		if(driver instanceof Wizard) ((Wizard)driver).setMaze(getMazeConfiguration());
 		//System.out.println("initialRobotEnergyLevel="+initialRobotEnergyLevel);
 	}
 	
