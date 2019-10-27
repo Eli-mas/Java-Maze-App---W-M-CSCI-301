@@ -621,13 +621,13 @@ public class BasicRobot implements Robot {
 				// energy used should be sum of move energy + sensing energy for both side sensors
 				// if robot did not move (it tried to move into wall), then only move energy is used,
 				//     distances are not re-calculated
-				if(1==delta) assert (energyBeforeMove-energyAfterMove)==
+				/*if(1==delta) assert (energyBeforeMove-energyAfterMove)==
 						(
 							energyUsedForMove +
 							(hasOperationalSensor(Direction.LEFT) ? 1 : 0) +
 							(hasOperationalSensor(Direction.RIGHT) ? 1 : 0)
 						):
-					energyBeforeMove+", "+energyAfterMove+" at "+Arrays.toString(currentPosition);
+					energyBeforeMove+", "+energyAfterMove+" at "+Arrays.toString(currentPosition);*/
 			}
 			catch (Exception e) {
 				// we get here if the robot moves out of the maze

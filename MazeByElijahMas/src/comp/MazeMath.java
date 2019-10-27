@@ -12,6 +12,7 @@ import generation.Maze;
 import generation.Floorplan;
 import generation.Distance;
 import gui.Constants;
+import gui.Robot;
 import gui.Robot.Direction;
 import comp.ExtendedList;
 
@@ -451,6 +452,14 @@ public class MazeMath {
 		}
 		
 		return result;
+	}
+	
+	public static Integer tryGetDistance(Robot robot, Direction direction) {
+		try{
+			return robot.distanceToObstacle(direction);
+		} catch (UnsupportedOperationException e) {
+			return -1;
+		}
 	}
 
 }

@@ -9,68 +9,6 @@ import generation.Distance;
 import gui.Robot.Direction;
 import gui.Robot.Turn;
 
-/*
-class RobotState {
-	public int distanceLeft() {
-		return -1;
-	}
-	public int distanceRight() {
-		return -1;
-	}
-	public int distanceForward() {
-		return -1;
-	}
-	public int distanceBackward() {
-		return -1;
-	}
-}
-
-class State_0000{
-	
-}
-
-class State_0001{
-	@Override
-	public int distanceLeft() {
-		
-	}
-}
-*/
-
-class RobotSensorTrigger implements Runnable{
-	
-	Direction direction;
-	AbstractRobotDriver driver;
-	Robot robot;
-	public static int deltaT = 3000;
-	
-	public RobotSensorTrigger(AbstractRobotDriver driver, Direction direction) {
-		this.direction=direction;
-		this.driver=driver;
-		this.robot=driver.getRobot();
-	}
-	
-	public void start() {
-		
-	}
-	
-	@Override
-	public void run() {
-		while(null!=driver.getRobotPosition() && !robot.hasStopped()) {
-			boolean sensorState = robot.hasOperationalSensor(direction);
-			if(sensorState) robot.triggerSensorFailure(direction);
-			else robot.repairFailedSensor(direction);
-			try {
-				Thread.sleep(deltaT);
-			} catch (InterruptedException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-		}
-	}
-	
-}
-
 public abstract class AbstractRobotDriver implements RobotDriver {
 	
 	Robot robot;
