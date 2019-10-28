@@ -4,6 +4,9 @@ import gui.Constants.UserInput;
 import gui.Robot.Direction;
 import gui.Robot.Turn;
 
+import java.awt.Component;
+import java.awt.Container;
+
 import javax.swing.JPanel;
 
 import generation.CardinalDirection;
@@ -118,6 +121,7 @@ public class Controller {
 	 */
 	float initialRobotEnergyLevel;
 	private JPanel optsPanel;
+	private Container container;
 	
 	/**
 	 * suppress certain warnings from printing, used for testing
@@ -135,6 +139,10 @@ public class Controller {
 	
 	public void setDriverString(String s) {
 		driverString=s;
+	}
+	
+	public void setContainer(Container app) {
+		this.container=app;
 	}
 	
 	private void init(boolean enableRobot) {
@@ -192,6 +200,7 @@ public class Controller {
 		currentState.setBuilder(builder); 
 		currentState.setPerfect(perfect); 
 		currentState.start(this, panel);
+		setComponentVisibleEnabled(false);
 	}
 	
 	/**
@@ -204,8 +213,7 @@ public class Controller {
 		currentState.setFileName(filename);
 		currentState.start(this, panel);
 		
-		optsPanel.setEnabled(false);
-		optsPanel.setVisible(false);
+		setComponentVisibleEnabled(false);
 
 	}
 	
@@ -285,12 +293,29 @@ public class Controller {
 	 * Switches the controller to the initial screen.
 	 */
 	public void switchToTitle() {
-		
-		optsPanel.setVisible(true);
-		optsPanel.setEnabled(true);
+		setComponentVisibleEnabled(true);
 		
 		currentState = states[0];
 		currentState.start(this, panel);
+	}
+	
+	private void setComponentVisibleEnabled(boolean aFlag) {
+		optsPanel.setVisible(aFlag);
+		optsPanel.setEnabled(aFlag);
+		
+		container.revalidate();
+		
+		for(Component comp: optsPanel.getComponents()) {
+			comp.setVisible(aFlag);
+			comp.setEnabled(aFlag);
+			System.out.println(comp.getName()+": "+aFlag);
+		}
+		
+		System.out.println("setting component visibility to "+aFlag);
+		
+		panel.update();
+		/*
+		*/
 	}
 	
 	/**

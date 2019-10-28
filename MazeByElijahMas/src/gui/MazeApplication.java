@@ -7,6 +7,7 @@ import generation.Order;
 
 import java.awt.BorderLayout;
 import java.awt.Color;
+import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -162,15 +163,18 @@ public class MazeApplication extends JFrame {
 		JComboBox driverOptsBox = new JComboBox(new String[] {"(None)","Wizard", "WallFollower"});
 		
 		JPanel mazeOptsPanel = new JPanel();
+		mazeOptsPanel.setName("mazes panel");
 		mazeOptsPanel.add(new JLabel("Type:"));
 		mazeOptsPanel.add(mazeOptsBox);
 		
 		JPanel levelOptsPanel = new JPanel();
 		levelOptsPanel.add(new JLabel("Difficulty:"));
+		levelOptsPanel.setName("levels panel");
 		levelOptsPanel.add(levelOptsBox);
 		
 		JPanel driverOptsPanel = new JPanel();
 		driverOptsPanel.add(new JLabel("Driver:"));
+		driverOptsPanel.setName("driver panel");
 		driverOptsPanel.add(driverOptsBox);
 		
 		master.add(mazeOptsPanel) ;
@@ -180,6 +184,7 @@ public class MazeApplication extends JFrame {
 		start.setMazeBox(mazeOptsBox);
 		start.setLevelBox(levelOptsBox);
 		start.setDriverBox(driverOptsBox);
+		start.setContainer(this);
 		
 		master.setBounds(0, 300, 400, 100);
 		
@@ -191,7 +196,7 @@ public class MazeApplication extends JFrame {
 		revalidate();
 		
 		
-		
+		controller.setContainer(this);
 		
 		controller.start();
 		
@@ -280,6 +285,7 @@ class StartPanel extends JPanel implements ActionListener {
 	private JComboBox levelOptsBox;
 	private JComboBox mazeOptsBox;
 	private JComboBox driverOptsBox;
+	private JFrame container;
 	
 	public StartPanel() {
 		setLayout(new GridBagLayout());
@@ -288,8 +294,13 @@ class StartPanel extends JPanel implements ActionListener {
 		setBackground(Color.green);
 		b.addActionListener(this);
 		add(b);
+		setName("Start");
 	}
 	
+	public void setContainer(MazeApplication container) {
+		this.container=container;
+	}
+
 	public void setDriverBox(JComboBox driverOptsBox) {
 		this.driverOptsBox=driverOptsBox;
 	}
@@ -313,8 +324,8 @@ class StartPanel extends JPanel implements ActionListener {
 	@Override
 	public void actionPerformed(ActionEvent e) {
 		System.out.println("startButton: Action performed: "+e);
-		b.setEnabled(false);
-		setVisible(false);
+		//b.setEnabled(false);
+		//setVisible(false);
 		String mazeType = (String)mazeOptsBox.getSelectedItem();
 		switch(mazeType) {
 			case "Eller":
@@ -331,5 +342,8 @@ class StartPanel extends JPanel implements ActionListener {
 		}
 		controller.switchFromTitleToGenerating((Integer)levelOptsBox.getSelectedItem());
 		controller.setDriverString((String)driverOptsBox.getSelectedItem());
+		
+		container.requestFocusInWindow();
+		
 	}
 }
