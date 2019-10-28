@@ -5,9 +5,9 @@ import generation.Distance;
 /**
  * This interface specifies a robot driver that operates a robot to escape from a given maze. 
  * 
- * Collaborators: Robot
+ * Collaborators: {@link Robot}
  * 
- * Implementing classes: WallFollower, Wizard
+ * Implementing classes: {@link WallFollower}, {@link Wizard}
  * 
  * @author Peter Kemper
  *
@@ -70,5 +70,17 @@ public interface RobotDriver {
 	 * This is used as a measure of efficiency for a robot driver.
 	 */
 	int getPathLength();
+	
+	/**
+	 * Changes internal state of the driver to realize that the algorithm has been
+	 * interrupted and should prematurely terminate.
+	 * 
+	 * When interrupted, drive2Exit should return false.
+	 * 
+	 * In order for this to have the intended effect, drive2Exit should be called
+	 * within a thread separate from the main thread;
+	 * otherwise this method has no effect.
+	 */
+	void interrupt();
 	
 }

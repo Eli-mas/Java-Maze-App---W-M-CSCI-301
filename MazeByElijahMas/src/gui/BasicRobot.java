@@ -491,7 +491,7 @@ public class BasicRobot implements Robot {
 		control.keyDown(UserInput.Right, 0);
 		
 		// check for agreement between robot & controller
-		assert control.getCurrentDirection()==currentDirection;
+		checkOrientation();// assert control.getCurrentDirection()==currentDirection;
 		//if(VERBOSE) System.out.printf(" --> %s, now facing %s\n",obstacleDistancesForwardRightBackwardLeft,currentDirection);
 		
 	}
@@ -528,7 +528,7 @@ public class BasicRobot implements Robot {
 		control.keyDown(UserInput.Left, 0);
 		
 		// check for agreement between robot & controller
-		assert control.getCurrentDirection()==currentDirection;
+		checkOrientation();// assert control.getCurrentDirection()==currentDirection;
 		//if(VERBOSE) System.out.printf(" --> %s, now facing %s\n",obstacleDistancesForwardRightBackwardLeft,currentDirection);
 	}
 	
@@ -698,8 +698,19 @@ public class BasicRobot implements Robot {
 			//try {getCurrentPosition();}
 			//catch (Exception e) {return;}
 			
-			assert Arrays.equals(control.getCurrentPosition(), currentPosition);
+			checkOrientation();//assert Arrays.equals(control.getCurrentPosition(), currentPosition);
 			//if(VERBOSE) System.out.printf("%s  - %s\n",obstacleDistancesForwardRightBackwardLeft,Arrays.toString(currentPosition));
+		}
+	}
+	
+	private void checkOrientation() {
+		try{
+			assert Arrays.equals(control.getCurrentPosition(), currentPosition);
+			assert control.getCurrentDirection()==currentDirection;
+		}
+		catch (AssertionError e){
+			System.out.println("controller and robot out of sync: exiting session");
+			//control.switchToTitle();
 		}
 	}
 	
@@ -747,7 +758,7 @@ public class BasicRobot implements Robot {
 				// robot is finished, push changes to Controller
 				control.keyDown(UserInput.Jump, 0);
 				
-				assert Arrays.equals(control.getCurrentPosition(), currentPosition);
+				checkOrientation();//assert Arrays.equals(control.getCurrentPosition(), currentPosition);
 				
 				assert getBatteryLevel()==energyBeforeJump-(energyUsedForJump+3*energyUsedForDistanceSensing):
 					"energy difference before/after rotation: "+

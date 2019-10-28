@@ -12,6 +12,8 @@ import gui.Robot.Turn;
 
 public class WallFollower extends AbstractRobotDriver {
 	
+	private int delayExpand=1;
+	
 	public WallFollower() {
 		
 	}
@@ -19,6 +21,15 @@ public class WallFollower extends AbstractRobotDriver {
 	@Override
 	public void setDistance(Distance distance) {
 		System.out.println("warning: the WallFollower class does not implement the setDistance method");
+	}
+	
+	@Override
+	public void triggerUpdateSensorInformation(){
+		int delayExpand=1;
+		if(!robot.hasOperationalSensor(Direction.LEFT)) delayExpand++;
+		if(!robot.hasOperationalSensor(Direction.FORWARD)) delayExpand++;
+		this.delayExpand=delayExpand;
+		System.out.println("WallFollower: sensor udpate: delayExpand = "+delayExpand);
 	}
 	
 	private void performNextOperation(){
@@ -83,13 +94,18 @@ public class WallFollower extends AbstractRobotDriver {
 		while(true) {
 			performNextOperation();
 			try{
-				Thread.sleep(walkDelay);
+				Thread.sleep(walkDelay*delayExpand);
 			} catch (InterruptedException e) {
 				e.printStackTrace();
 			}
 			if(robot.hasStopped())
 				throw new Exception(getRobotFailureMessage());
 			if(robot.isAtExit()) break;
+			if(interrupted) return false;
+		}
+		
+		if(null==getRobotPosition()) {
+			return true;
 		}
 		
 		CardinalDirection exitDirection = directionOfExit();

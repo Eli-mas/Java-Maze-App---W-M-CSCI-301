@@ -44,10 +44,32 @@ public class RobotMove extends RobotOperation{
 		robot.move(distance, false);
 	}
 	
-	/*
 	@Override
 	public String toString() {
 		return String.format("Move(%d)",distance);
 	}
-	*/
+
+	@Override
+	public int hashCode() {
+		final int prime = 31;
+		int result = 1;
+		result = prime * result + distance;
+		return result;
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj)
+			return true;
+		if (obj == null)
+			return false;
+		if (getClass() != obj.getClass())
+			return false;
+		RobotMove other = (RobotMove) obj;
+		if (distance != other.distance)
+			return false;
+		return true;
+	}
+	
+	
 }

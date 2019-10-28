@@ -6,6 +6,7 @@ import gui.Robot.Turn;
 
 import java.awt.Component;
 import java.awt.Container;
+import java.util.HashMap;
 
 import javax.swing.JFrame;
 import javax.swing.JPanel;
@@ -124,6 +125,7 @@ public class Controller {
 	private JPanel optsPanel;
 	private Container container;
 	private JPanel sensorButtons;
+	private HashMap<Direction,Thread> sensorThreads;
 	
 	public Container getContainer() {
 		return container;
@@ -265,6 +267,15 @@ public class Controller {
 		}
 		currentState.start(this, panel);
 	}
+
+	public void communicateSensorTrigger(Direction direction) {
+		if(!(currentState instanceof StatePlaying)) return;
+		
+		Thread t = sensorThreads.get(direction);
+		if(!t.isAlive()) {
+			t.start();
+		}
+	}
 	
 	/**
 	 * Set the initial robot energy level.
@@ -289,15 +300,10 @@ public class Controller {
 		if(null!=panel && null!=robot && null!=driver) {
 		//	robot.triggerSensorFailure(Direction.FORWARD);
 		//	robot.triggerSensorFailure(Direction.LEFT);
+			sensorThreads = new HashMap<Direction, Thread>(4);
 			for(Direction d: Direction.values()) {
-				Thread t = new Thread(new RobotSensorTrigger(d,driver,robot));
-				try {
-					Thread.sleep(750);
-				} catch (InterruptedException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
-				t.start();
+				Thread t = new Thread(new RobotSensorTrigger(d,driver,robot,this));
+				sensorThreads.put(d, t);
 			}
 		}
 		//System.out.println("initialRobotEnergyLevel="+initialRobotEnergyLevel);
@@ -329,20 +335,25 @@ public class Controller {
 		optsPanel.setVisible(aFlag);
 		optsPanel.setEnabled(aFlag);
 		
-		container.revalidate();
-		
-		for(Component comp: optsPanel.getComponents()) {
+		/*for(Component comp: optsPanel.getComponents()) {
 			comp.setVisible(aFlag);
 			comp.setEnabled(aFlag);
-			//System.out.println(comp.getName()+": "+aFlag);
+			System.out.println(comp.getName()+": "+aFlag);
 		}
+		*/
 		
-		panel.update();
+		optsPanel.update(optsPanel.getGraphics());
+		optsPanel.repaint();
+		
+		//panel.update();
+		
+		container.revalidate();
 	}
 	
 	public void setSensorButtonsState(boolean aFlag) {
 		sensorButtons.setVisible(aFlag);
 		sensorButtons.setEnabled(aFlag);
+		sensorButtons.repaint();
 		sensorButtons.getParent().revalidate();
 	}
 	
@@ -362,30 +373,44 @@ public class Controller {
 	}
 	
 	public boolean keyDownRobot(UserInput key, int value) {
-		switch(key) {
-			case Left:
-				robot.rotate(Turn.LEFT);
-				break;
-			case Right:
-				robot.rotate(Turn.RIGHT);
-				break;
-			case Up:
-				robot.move(1, manualRobotOperation);
-				break;
-			case Jump:
-				try {
-					robot.jump();
-				} catch (Exception e) {
-					// e.printStackTrace();
-					System.out.println("invalid jump attempted: game ending");
-				}
-				break;
-			case Down:
-				return false;
-			default:
+		if(null!=driver) {
+			switch(key) {
+			case ToggleLocalMap: case ToggleFullMap: case ToggleSolution:
+			case ZoomIn: case ZoomOut:
 				return currentState.keyDown(key, value);
+			default:
+				driver.interrupt();
+				switchToTitle();
+				return false;
+			}
 		}
-		return true;
+		
+		else{
+			switch(key) {
+				case Left:
+					robot.rotate(Turn.LEFT);
+					break;
+				case Right:
+					robot.rotate(Turn.RIGHT);
+					break;
+				case Up:
+					robot.move(1, manualRobotOperation);
+					break;
+				case Jump:
+					try {
+						robot.jump();
+					} catch (Exception e) {
+						// e.printStackTrace();
+						System.out.println("invalid jump attempted: game ending");
+					}
+					break;
+				case Down:
+					return false;
+				default:
+					return currentState.keyDown(key, value);
+			}
+			return true;
+		}
 	}
 	
 	/**

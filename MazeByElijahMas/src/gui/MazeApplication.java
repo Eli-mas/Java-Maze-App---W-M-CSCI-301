@@ -4,17 +4,20 @@
 package gui;
 
 import generation.Order;
+import gui.Robot.Direction;
 
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.Dimension;
+import java.awt.FlowLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyListener;
 import java.awt.GridBagLayout;
 import java.awt.GridLayout;
 import java.io.File;
+import java.util.EventObject;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -47,7 +50,7 @@ public class MazeApplication extends JFrame {
 		return robotEnabled;
 	}
 
-	private JPanel sensorButtons;
+	private SensorButtonPanel sensorButtons;
 
 	/**
 	 * Constructor
@@ -129,6 +132,8 @@ public class MazeApplication extends JFrame {
 	    setLayout(new BorderLayout());
 	    
 	    
+	    int sensorButtonsHeight = 30;
+	    
 	    
 		pack();
 		// instantiate a key listener that feeds keyboard input into the controller
@@ -136,7 +141,7 @@ public class MazeApplication extends JFrame {
 		KeyListener kl = new SimpleKeyListener(this, controller) ;
 		addKeyListener(kl) ;
 		// set the frame to a fixed size for its width and height and put it on display
-		setSize(400, 400) ;
+		setSize(400, 400+sensorButtonsHeight*2) ;
 		setVisible(true) ;
 		// focus should be on the JFrame of the MazeApplication and not on the maze panel
 		// such that the SimpleKeyListener kl is used
@@ -190,16 +195,16 @@ public class MazeApplication extends JFrame {
 		
 		master.setBounds(0, 300, 400, 100);
 		
-		sensorButtons = new JPanel();
-		sensorButtons.setSize(20,20);
-		sensorButtons.setBounds(0, 0, 400, 30);
-		sensorButtons.setLayout(new BorderLayout(1,4));
-		sensorButtons.setVisible(false);
-		sensorButtons.setEnabled(false);
+		sensorButtons = new SensorButtonPanel();
+		sensorButtons.setController(controller);
+		sensorButtons.setBounds(0, 400, 400, sensorButtonsHeight);
+		sensorButtons.setLayout(new FlowLayout());
+		
 		add(sensorButtons);
 		System.out.println("playing buttons added");
 		
 		add(master);
+		controller.getPanel().setSize(400, 400);
 		add(controller.getPanel());
 		controller.setOptionsPanel(master);
 		controller.setSensorButtons(sensorButtons);
@@ -288,6 +293,64 @@ public class MazeApplication extends JFrame {
 	}
 
 }
+
+
+class SensorButtonPanel extends JPanel {
+	
+	
+	private Controller controller;
+
+	public SensorButtonPanel() {
+		setVisible(false);
+		setEnabled(false);
+		setFocusable(false);
+		
+		ActionListener a = new ActionListener() {
+			
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				Object source = e.getSource();
+				if(source instanceof dButton) {//
+					System.out.println("source: direction="+((dButton)source).getDirection());
+					controller.communicateSensorTrigger(((dButton)source).getDirection());
+				}
+			}
+			
+		};
+		
+		for(Direction d: Direction.values()) {
+			dButton button = new dButton(d);
+			button.setFocusable(false);
+			add(button);
+			button.addActionListener(a);
+		}
+		
+	}
+
+	public void setController(Controller controller) {
+		this.controller=controller;
+	}
+	
+	
+}
+
+class dButton extends JButton {
+	private Direction direction;
+	
+	
+	public dButton(Direction d) {
+		super(d.toString());
+		direction=d;
+	}
+
+	public Direction getDirection() {
+		return direction;
+	}
+}
+
+
+
+
 
 
 class StartPanel extends JPanel implements ActionListener {

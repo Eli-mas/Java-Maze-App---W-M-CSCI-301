@@ -126,13 +126,17 @@ public class StatePlaying extends DefaultState {
 				
 				System.out.println("driving to exit");
 				try {
-					Thread.sleep(1000);
+					Thread.sleep(500);
 				} catch (InterruptedException e1) {
 					// TODO Auto-generated catch block
 					e1.printStackTrace();
 				}
 				try {
-					controller.getDriver().drive2Exit();
+					boolean result = controller.getDriver().drive2Exit();
+					if(!result) {
+						System.out.println("drive was interrupted: ending session");
+						controller.switchToTitle();
+					}
 				} catch (Exception e) {
 					// TODO Auto-generated catch block
 					System.out.println("driver could not reach exit in maze:");

@@ -18,6 +18,7 @@ public abstract class AbstractRobotDriver implements RobotDriver {
 	protected Controller controller;
 	CardinalDirection currentDirection;
 	int[] currentPosition;
+	boolean interrupted=false;
 	
 	public static int walkDelay = 40;
 	
@@ -75,7 +76,15 @@ public abstract class AbstractRobotDriver implements RobotDriver {
 		return robot.getOdometerReading();
 	}
 	
-	
+	@Override
+	public void interrupt() {
+		interrupted = true;
+		System.out.println("\nAn invalid key (unrelated to toggling or altering map view)"
+				+ " has been pressed while the robot driver was operating; "
+				+ "this has caused the driver to interrupt and the current session"
+				+ " to terminate."
+		);
+	}
 	
 	
 	protected void log(String s) {
@@ -269,8 +278,7 @@ public abstract class AbstractRobotDriver implements RobotDriver {
 		int count=0;
 		
 		for(CardinalDirection cd: CardinalDirection.values()){
-			if(__getDistance__(cd)==Integer.MAX_VALUE) {
-				//System.out.printf("robot at %s sees exit at %s (%s)\n",Arrays.toString(getRobotPosition()),cd,Arrays.toString(cd.getDirection()));
+			if(getDistance(cd)==Integer.MAX_VALUE) {
 				exit=cd;//MazeMath.convertDirs(cd, robot.getCurrentDirection());
 				count++;
 			}

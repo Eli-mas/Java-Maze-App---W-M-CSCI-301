@@ -8,12 +8,14 @@ public class RobotSensorTrigger implements Runnable{
 	Direction direction;
 	RobotDriver driver;
 	Robot robot;
+	Controller controller;
 	public static int deltaT = 3000;
 	
-	public RobotSensorTrigger(Direction direction, RobotDriver driver, Robot robot) {
+	public RobotSensorTrigger(Direction direction, RobotDriver driver, Robot robot, Controller controller) {
 		this.direction=direction;
 		this.driver=driver;
 		this.robot=robot;
+		this.controller=controller;
 	}
 	
 	public void start() {
@@ -22,7 +24,7 @@ public class RobotSensorTrigger implements Runnable{
 	
 	@Override
 	public void run() {
-		while(null!=MazeMath.getRobotPosition(robot) && !robot.hasStopped()) {
+		while(null!=MazeMath.getRobotPosition(robot) && !robot.hasStopped() && (controller.currentState instanceof StatePlaying)) {
 			boolean sensorState = robot.hasOperationalSensor(direction);
 			if(sensorState) {
 				robot.triggerSensorFailure(direction);
