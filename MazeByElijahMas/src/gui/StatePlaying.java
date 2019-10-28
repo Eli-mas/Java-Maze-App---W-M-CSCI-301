@@ -261,7 +261,7 @@ public class StatePlaying extends DefaultState {
 		ArrayList<Object> d = new ArrayList<Object>(4);
 		int v;
 		for(Direction dir: MazeMath.ForwardRightBackwardLeft) {
-			v=robot.distanceToObstacle(dir);
+			v=MazeMath.tryGetDistance(robot, dir);//robot.distanceToObstacle(dir);
 			d.add(Integer.MAX_VALUE==v ? "inf" : v);
 		}
 		
@@ -288,7 +288,7 @@ public class StatePlaying extends DefaultState {
 					(int)robot.getBatteryLevel(),
 					Arrays.toString(robot.getCurrentPosition()),
 					robot.getCurrentDirection(),
-					getRobotDistances()
+					"--"//(control.getDriver()==null) ? getRobotDistances() : "--"
 				),
 				Constants.BATTERY_INDICATOR_X,
 				Constants.BATTERY_INDICATOR_Y
@@ -297,14 +297,17 @@ public class StatePlaying extends DefaultState {
 			// check whether robot is at exit and/or can see out of maze
 			// if so print messages to indicate so
 			String lookingOutString="";
-			for(Direction d: Direction.values()) {
-				if(robot.canSeeThroughTheExitIntoEternity(d)){
-					lookingOutString+="looking out";
-					break;
+			/*
+			if(control.getDriver()==null) {
+				for(Direction d: Direction.values()) {
+					if(robot.canSeeThroughTheExitIntoEternity(d)){
+						lookingOutString+="looking out";
+						break;
+					}
 				}
 			}
 			if(robot.isAtExit()) lookingOutString+=" at exit";
-			
+			*/
 			g.setColor(Color.cyan);
 			
 			//render odometer reading
@@ -323,7 +326,7 @@ public class StatePlaying extends DefaultState {
 		} catch (Exception e) {
 			if(!e.getMessage().contains("getCurrentPosition")) {
 				System.out.println("! ! ! StatePlaying: cannot update robot position ! ! !");
-				e.printStackTrace();
+				//e.printStackTrace();
 			}
 		}
 		

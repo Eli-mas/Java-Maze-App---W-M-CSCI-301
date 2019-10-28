@@ -6,6 +6,8 @@ import java.awt.Image;
 import java.awt.Panel;
 import java.awt.RenderingHints;
 
+import javax.swing.JPanel;
+
 /**
  * Add functionality for double buffering to an AWT Panel class.
  * Used for drawing a maze.
@@ -13,7 +15,7 @@ import java.awt.RenderingHints;
  * @author Peter Kemper
  *
  */
-public class MazePanel extends Panel  {
+public class MazePanel extends JPanel  {
 	/* Panel operates a double buffer see
 	 * http://www.codeproject.com/Articles/2136/Double-buffer-in-standard-Java-AWT
 	 * for details

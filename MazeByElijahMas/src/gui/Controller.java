@@ -1,7 +1,11 @@
 package gui;
 
 import gui.Constants.UserInput;
+import gui.Robot.Direction;
 import gui.Robot.Turn;
+
+import javax.swing.JPanel;
+
 import generation.CardinalDirection;
 import generation.Maze;
 import generation.Order;
@@ -88,6 +92,12 @@ public class Controller {
 	 */
 	boolean perfect;
 	
+	/**
+	 * Used to communicate to Controller what driver should be used.
+	 * If no driver to be set, this is null.
+	 */
+	String driverString="";
+	
 	//// Extension in preparation for Project 3: robot and robot driver //////
 	/**
 	 * The robot that interacts with the controller starting from P3
@@ -107,6 +117,7 @@ public class Controller {
 	 * Starting energy level of the robot, used to measure energy consumption
 	 */
 	float initialRobotEnergyLevel;
+	private JPanel optsPanel;
 	
 	/**
 	 * suppress certain warnings from printing, used for testing
@@ -120,6 +131,10 @@ public class Controller {
 	
 	public Controller(boolean enableRobot) {
 		init(enableRobot);
+	}
+	
+	public void setDriverString(String s) {
+		driverString=s;
 	}
 	
 	private void init(boolean enableRobot) {
@@ -159,6 +174,10 @@ public class Controller {
 		currentState.start(this, panel);
 		fileName = null; // reset after use
 	 }
+	
+	public void setOptionsPanel(JPanel master) {
+		this.optsPanel = master;
+	}
 	   
 	/**
 	 * Switches the controller to the generating screen.
@@ -184,6 +203,10 @@ public class Controller {
 		currentState = states[1];
 		currentState.setFileName(filename);
 		currentState.start(this, panel);
+		
+		optsPanel.setEnabled(false);
+		optsPanel.setVisible(false);
+
 	}
 	
 	/**
@@ -201,9 +224,18 @@ public class Controller {
 		
 		
 		if(robotEnabled){
+			RobotDriver new_driver=null;
 			//System.out.println("Controller: initializing the robot");
+			switch(driverString) {
+				case "Wizard":
+					new_driver=new Wizard();
+					break;
+				case "WallFollower":
+					new_driver = new WallFollower();
+					break;
+				default: break;
+			}
 			Robot new_robot = new BasicRobot();
-			RobotDriver new_driver = new Wizard();
 			setRobotAndDriver(new_robot,new_driver);
 			//setupRobot()
 			// can't do this here--
@@ -232,6 +264,10 @@ public class Controller {
 		RobotDriver driver = getDriver();
 		if(null != driver) driver.setRobot(robot);
 		if(driver instanceof Wizard) ((Wizard)driver).setMaze(getMazeConfiguration());
+		if(null!=panel) {
+		//	robot.triggerSensorFailure(Direction.FORWARD);
+		//	robot.triggerSensorFailure(Direction.LEFT);
+		}
 		//System.out.println("initialRobotEnergyLevel="+initialRobotEnergyLevel);
 	}
 	
@@ -249,6 +285,10 @@ public class Controller {
 	 * Switches the controller to the initial screen.
 	 */
 	public void switchToTitle() {
+		
+		optsPanel.setVisible(true);
+		optsPanel.setEnabled(true);
+		
 		currentState = states[0];
 		currentState.start(this, panel);
 	}

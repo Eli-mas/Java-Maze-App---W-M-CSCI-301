@@ -5,10 +5,25 @@ package gui;
 
 import generation.Order;
 
+import java.awt.BorderLayout;
+import java.awt.Color;
+import java.awt.Dimension;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.awt.event.KeyListener;
+import java.awt.GridBagLayout;
+import java.awt.GridLayout;
 import java.io.File;
+import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
+import javax.swing.BoxLayout;
+import javax.swing.JButton;
+import javax.swing.JComboBox;
 import javax.swing.JFrame;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
 
 
 /**
@@ -107,7 +122,12 @@ public class MazeApplication extends JFrame {
 	private void init(String parameter) {
 	    // instantiate a game controller and add it to the JFrame
 	    Controller controller = createController(parameter);
-		add(controller.getPanel()) ;
+	    
+	    setLayout(new BorderLayout());
+	    
+	    
+	    
+		pack();
 		// instantiate a key listener that feeds keyboard input into the controller
 		// and add it to the JFrame
 		KeyListener kl = new SimpleKeyListener(this, controller) ;
@@ -119,7 +139,109 @@ public class MazeApplication extends JFrame {
 		// such that the SimpleKeyListener kl is used
 		setFocusable(true) ;
 		// start the game, hand over control to the game controller
+		
+		GridLayout layout = new GridLayout(1,4);
+		
+		JPanel master = new JPanel();
+		master.setLayout(layout);
+		
+		StartPanel start = new StartPanel();
+		start.setController(controller);
+		master.add(start) ;
+		
+		
+		//levelStrings.add(0,"(select one...)");
+		
+		JComboBox levelOptsBox =
+			new JComboBox(IntStream.range(0,Constants.SKILL_X.length).mapToObj(Integer::valueOf).toArray());
+		levelOptsBox.setName("Levels");
+		
+		JComboBox mazeOptsBox = new JComboBox(new String[] {"DFS", "Eller", "Prim"});//, "Kruskal"
+		mazeOptsBox.setName("Mazes");
+		
+		JComboBox driverOptsBox = new JComboBox(new String[] {"(None)","Wizard", "WallFollower"});
+		
+		JPanel mazeOptsPanel = new JPanel();
+		mazeOptsPanel.add(new JLabel("Type:"));
+		mazeOptsPanel.add(mazeOptsBox);
+		
+		JPanel levelOptsPanel = new JPanel();
+		levelOptsPanel.add(new JLabel("Difficulty:"));
+		levelOptsPanel.add(levelOptsBox);
+		
+		JPanel driverOptsPanel = new JPanel();
+		driverOptsPanel.add(new JLabel("Driver:"));
+		driverOptsPanel.add(driverOptsBox);
+		
+		master.add(mazeOptsPanel) ;
+		master.add(levelOptsPanel) ;
+		master.add(driverOptsPanel) ;
+		
+		start.setMazeBox(mazeOptsBox);
+		start.setLevelBox(levelOptsBox);
+		start.setDriverBox(driverOptsBox);
+		
+		master.setBounds(0, 300, 400, 100);
+		
+		add(master);
+		add(controller.getPanel());
+		controller.setOptionsPanel(master);
+		//remove(master);
+		
+		revalidate();
+		
+		
+		
+		
 		controller.start();
+		
+		
+		
+		
+		/*
+		mazeOptsBox.setSize(50, 50);
+		
+		levelOptsBox.setSize(50, 50);
+		
+		//controller.getPanel().setSize(100, 200);
+		
+		start.setSize(100, 100);
+		
+		
+		//controller.getPanel().setFocusable(true);
+		controller.getPanel().setVisible(true);
+		
+		JPanel jp = new JPanel();
+		jp.setSize(50, 50);
+		jp.setVisible(true);
+		jp.setBackground(Color.cyan);
+		jp.setLayout(layout);
+		
+		button.setBounds(150, 40, 100, 30);
+		button.setSize(40,20);
+		
+		jp.add(mazeOptsBox);
+		jp.add(levelOptsBox);
+		
+		controller.getPanel().add(button,0);
+		
+		master.add(jp);
+		//master.add(controller.getPanel());
+		//jp.add(start);
+		
+		//add(jp,0);
+		add(start,1);
+		
+		button.setSize(40, 20);
+		add(button,BorderLayout.NORTH);
+		revalidate();
+		
+		System.out.printf("%s, %s\n",levelOptsBox.getSelectedItem(),mazeOptsBox.getSelectedItem());
+		*/
+	}
+	
+	public void actionPerformed(ActionEvent e){
+		System.out.println("action performed: "+e);
 	}
 	
 	/**
@@ -148,4 +270,66 @@ public class MazeApplication extends JFrame {
 		app.repaint() ;
 	}
 
+}
+
+
+class StartPanel extends JPanel implements ActionListener {
+	
+	JButton b;
+	Controller controller;
+	private JComboBox levelOptsBox;
+	private JComboBox mazeOptsBox;
+	private JComboBox driverOptsBox;
+	
+	public StartPanel() {
+		setLayout(new GridBagLayout());
+		b = new JButton("Start");
+		b.setBackground(Color.green);
+		setBackground(Color.green);
+		b.addActionListener(this);
+		add(b);
+	}
+	
+	public void setDriverBox(JComboBox driverOptsBox) {
+		this.driverOptsBox=driverOptsBox;
+	}
+
+	public void setController(Controller controller) {
+		this.controller=controller;
+	}
+	
+	public JButton getButton() {
+		return b;
+	}
+	
+	public void setLevelBox(JComboBox levelOptsBox) {
+		this.levelOptsBox=levelOptsBox;
+	}
+	
+	public void setMazeBox(JComboBox mazeOptsBox) {
+		this.mazeOptsBox=mazeOptsBox;
+	}
+
+	@Override
+	public void actionPerformed(ActionEvent e) {
+		System.out.println("startButton: Action performed: "+e);
+		b.setEnabled(false);
+		setVisible(false);
+		String mazeType = (String)mazeOptsBox.getSelectedItem();
+		switch(mazeType) {
+			case "Eller":
+				controller.setBuilder(Order.Builder.Eller);
+				break;
+			//case "Kruskal": controller.setBuilder(Order.Builder.Kruskal); break;
+			case "Prim":
+				controller.setBuilder(Order.Builder.Prim);
+				break;
+			case "DFS":
+				controller.setBuilder(Order.Builder.DFS);
+				break;
+			default: break;
+		}
+		controller.switchFromTitleToGenerating((Integer)levelOptsBox.getSelectedItem());
+		controller.setDriverString((String)driverOptsBox.getSelectedItem());
+	}
 }
