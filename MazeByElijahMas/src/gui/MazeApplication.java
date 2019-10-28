@@ -47,6 +47,8 @@ public class MazeApplication extends JFrame {
 		return robotEnabled;
 	}
 
+	private JPanel sensorButtons;
+
 	/**
 	 * Constructor
 	 */
@@ -188,9 +190,19 @@ public class MazeApplication extends JFrame {
 		
 		master.setBounds(0, 300, 400, 100);
 		
+		sensorButtons = new JPanel();
+		sensorButtons.setSize(20,20);
+		sensorButtons.setBounds(0, 0, 400, 30);
+		sensorButtons.setLayout(new BorderLayout(1,4));
+		sensorButtons.setVisible(false);
+		sensorButtons.setEnabled(false);
+		add(sensorButtons);
+		System.out.println("playing buttons added");
+		
 		add(master);
 		add(controller.getPanel());
 		controller.setOptionsPanel(master);
+		controller.setSensorButtons(sensorButtons);
 		//remove(master);
 		
 		revalidate();

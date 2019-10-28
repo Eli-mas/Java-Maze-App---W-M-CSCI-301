@@ -461,5 +461,14 @@ public class MazeMath {
 			return -1;
 		}
 	}
+	
+	public static int[] getRobotPosition(Robot robot) {
+		try {
+			return robot.getCurrentPosition();
+		}
+		catch (Exception e) {
+			return null;
+		}
+	}
 
 }

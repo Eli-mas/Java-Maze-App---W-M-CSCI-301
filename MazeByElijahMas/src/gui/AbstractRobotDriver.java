@@ -107,12 +107,7 @@ public abstract class AbstractRobotDriver implements RobotDriver {
 	 * @return position if no exception, otherwise null
 	 */
 	int[] getRobotPosition() {
-		try {
-			return robot.getCurrentPosition();
-		} catch (Exception e) {
-			// e.printStackTrace();
-			return null;
-		}
+		return MazeMath.getRobotPosition(robot);
 	}
 	
 	public CardinalDirection getCurrentDirection() {

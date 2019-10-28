@@ -2,11 +2,16 @@ package gui;
 
 import gui.Constants.UserInput;
 
+import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.FontMetrics;
 import java.awt.Graphics;
+import java.awt.event.ActionEvent;
 import java.util.ArrayList;
 import java.util.Arrays;
+
+import javax.swing.JButton;
+import javax.swing.JPanel;
 
 import comp.MazeMath;
 import generation.CardinalDirection;
@@ -67,6 +72,7 @@ public class StatePlaying extends DefaultState {
 	//private boolean allVisible = false;
 	//private boolean newGame = false;
 
+	JPanel sensorButtons;
 	
 	boolean started;
 	
@@ -116,6 +122,8 @@ public class StatePlaying extends DefaultState {
 		if (panel != null) {
 			startDrawer();
 			if(controller.getDriver() != null) {
+				controller.setSensorButtonsState(true);
+				
 				System.out.println("driving to exit");
 				try {
 					Thread.sleep(1000);
@@ -542,3 +550,24 @@ public class StatePlaying extends DefaultState {
 
 
 
+class RobotSensorButton extends JButton{
+	
+	Direction direction;
+	Robot robot;
+	RobotDriver driver;
+	boolean clicked;
+	
+	public RobotSensorButton(Direction direction, Robot robot, RobotDriver driver) {
+		this.direction=direction;
+		this.robot=robot;
+		this.driver=driver;
+		clicked=false;
+	}
+	
+	public Direction getDirection() {
+		return direction;
+	}
+	
+	
+	
+}

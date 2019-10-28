@@ -7,6 +7,7 @@ import gui.Robot.Turn;
 import java.awt.Component;
 import java.awt.Container;
 
+import javax.swing.JFrame;
 import javax.swing.JPanel;
 
 import generation.CardinalDirection;
@@ -122,6 +123,19 @@ public class Controller {
 	float initialRobotEnergyLevel;
 	private JPanel optsPanel;
 	private Container container;
+	private JPanel sensorButtons;
+	
+	public Container getContainer() {
+		return container;
+	}
+	
+	public void setSensorButtons(JPanel sensorButtons) {
+		this.sensorButtons=sensorButtons;
+	}
+	
+	public JPanel getSensorButtons() {
+		return sensorButtons;
+	}
 	
 	/**
 	 * suppress certain warnings from printing, used for testing
@@ -272,9 +286,19 @@ public class Controller {
 		RobotDriver driver = getDriver();
 		if(null != driver) driver.setRobot(robot);
 		if(driver instanceof Wizard) ((Wizard)driver).setMaze(getMazeConfiguration());
-		if(null!=panel) {
+		if(null!=panel && null!=robot && null!=driver) {
 		//	robot.triggerSensorFailure(Direction.FORWARD);
 		//	robot.triggerSensorFailure(Direction.LEFT);
+			for(Direction d: Direction.values()) {
+				Thread t = new Thread(new RobotSensorTrigger(d,driver,robot));
+				try {
+					Thread.sleep(750);
+				} catch (InterruptedException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+				t.start();
+			}
 		}
 		//System.out.println("initialRobotEnergyLevel="+initialRobotEnergyLevel);
 	}
@@ -295,6 +319,8 @@ public class Controller {
 	public void switchToTitle() {
 		setComponentVisibleEnabled(true);
 		
+		setSensorButtonsState(false);
+		
 		currentState = states[0];
 		currentState.start(this, panel);
 	}
@@ -308,14 +334,16 @@ public class Controller {
 		for(Component comp: optsPanel.getComponents()) {
 			comp.setVisible(aFlag);
 			comp.setEnabled(aFlag);
-			System.out.println(comp.getName()+": "+aFlag);
+			//System.out.println(comp.getName()+": "+aFlag);
 		}
 		
-		System.out.println("setting component visibility to "+aFlag);
-		
 		panel.update();
-		/*
-		*/
+	}
+	
+	public void setSensorButtonsState(boolean aFlag) {
+		sensorButtons.setVisible(aFlag);
+		sensorButtons.setEnabled(aFlag);
+		sensorButtons.getParent().revalidate();
 	}
 	
 	/**
