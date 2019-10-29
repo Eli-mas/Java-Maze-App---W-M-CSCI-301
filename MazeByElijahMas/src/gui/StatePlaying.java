@@ -105,12 +105,20 @@ public class StatePlaying extends DefaultState {
 		robotEnabled = (null!=robot) ? true : false;
 		// keep the reference to the panel for drawing
 		this.panel = panel;
-		//
+		
 		// adjust internal state of maze model
 		// visibility settings
-		showMaze = false ;
-		showSolution = false ;
-		mapMode = false;
+		// if driver is present, map is shown by default; otherwise hidden by default
+		if(null==controller.getDriver()) {
+			showMaze = false ;
+			showSolution = false ;
+			mapMode = false;
+		}
+		else {
+			showMaze = true ;
+			showSolution = true ;
+			mapMode = true;
+		}
 		// init data structure for visible walls
 		seenCells = new Floorplan(mazeConfig.getWidth()+1,mazeConfig.getHeight()+1) ;
 		// set the current position and direction consistently with the viewing direction
@@ -269,6 +277,9 @@ public class StatePlaying extends DefaultState {
 		return true;
 	}
 	
+	/*
+	 * 
+	 * @return
 	private ArrayList<Object> getRobotDistances() {
 		ArrayList<Object> d = new ArrayList<Object>(4);
 		int v;
@@ -279,6 +290,7 @@ public class StatePlaying extends DefaultState {
 		
 		return d;
 	}
+	 **/
 	
 	/**
 	 * On the playing screen, display information about the robot, including
@@ -554,7 +566,7 @@ public class StatePlaying extends DefaultState {
 
 
 
-class RobotSensorButton extends JButton{
+/*class RobotSensorButton extends JButton{
 	
 	Direction direction;
 	Robot robot;
@@ -573,5 +585,5 @@ class RobotSensorButton extends JButton{
 	}
 	
 	
-	
 }
+*/

@@ -111,6 +111,16 @@ public enum CardinalDirection {
 			throw new IllegalArgumentException("Illegal input value for dx: " + dx) ;
 		}
 	}
+	
+	/**
+	 * Wrapper around {@link #getDirection(int, int)}.
+	 * @param dx_dy {@code int[]{x,y}} coordinate
+	 * @return corresponding cardinal direction
+	 */
+	static public CardinalDirection getDirection(int[] dx_dy) {
+		return CardinalDirection.getDirection(dx_dy[0], dx_dy[1]);
+	}
+	
 	/**
 	 * Gives the (dx,dy) pair as in Cells.java for the current direction
 	 * @return (dx,dy) pair, dx,dy in {-1,0,1}

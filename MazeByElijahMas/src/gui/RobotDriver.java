@@ -9,6 +9,8 @@ import generation.Distance;
  * 
  * Implementing classes: {@link WallFollower}, {@link Wizard}
  * 
+ * New for Project 4: interrupt method
+ * 
  * @author Peter Kemper
  *
  */

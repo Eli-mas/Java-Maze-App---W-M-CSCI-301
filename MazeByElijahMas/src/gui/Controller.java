@@ -108,8 +108,16 @@ public class Controller {
 	 * The robot that interacts with the controller starting from P3
 	 */
 	Robot robot;
+	/**
+	 * whether a robot will be instantiated
+	 */
 	boolean robotEnabled;
+	
+	/**
+	 * failure message if robot encounters error
+	 */
 	private String robotFailureMessage="";
+	
 	/**
 	 * The driver that interacts with the robot starting from P3
 	 */
@@ -122,9 +130,25 @@ public class Controller {
 	 * Starting energy level of the robot, used to measure energy consumption
 	 */
 	float initialRobotEnergyLevel;
+	
+	/**
+	 * Holds options components for selecting maze difficulty, maze type, and driver type
+	 */
 	private JPanel optsPanel;
+	
+	/**
+	 * reference to the JFrame (MazeApplication) that holds everything
+	 */
 	private Container container;
+	
+	/**
+	 * holds buttons that allow for triggering {@link RobotSensorTrigger} sensor failure threads
+	 */
 	private JPanel sensorButtons;
+	
+	/**
+	 * Threads that induces sensor failure cycles by way of {@link RobotSensorTrigger} instances
+	 */
 	private HashMap<Direction,Thread> sensorThreads;
 	
 	public Container getContainer() {
@@ -143,12 +167,22 @@ public class Controller {
 	 * suppress certain warnings from printing, used for testing
 	 */
 	public static boolean suppressWarnings=false;
+	/**
+	 * suppress certain updates from printing, used for testing
+	 */
 	public static boolean suppressUpdates=false;
 	
+	/**
+	 * default is to not initialize a robot
+	 */
 	public Controller() {
 		init(false);
 	}
 	
+	/**
+	 * Constructor that allows for enabling robot
+	 * @param enableRobot whether a robot should be enabled
+	 */
 	public Controller(boolean enableRobot) {
 		init(enableRobot);
 	}
@@ -161,6 +195,11 @@ public class Controller {
 		this.container=app;
 	}
 	
+	/**
+	 * Set the {@link State} instances of the controller and other parameters
+	 * used in maze generation.
+	 * @param enableRobot whether a robot is to be initialized
+	 */
 	private void init(boolean enableRobot) {
 		states = new State[4];
 		states[0] = new StateTitle();
@@ -199,8 +238,8 @@ public class Controller {
 		fileName = null; // reset after use
 	 }
 	
-	public void setOptionsPanel(JPanel master) {
-		this.optsPanel = master;
+	public void setOptionsPanel(JPanel optsPanel) {
+		this.optsPanel = optsPanel;
 	}
 	   
 	/**
@@ -216,7 +255,7 @@ public class Controller {
 		currentState.setBuilder(builder); 
 		currentState.setPerfect(perfect); 
 		currentState.start(this, panel);
-		setComponentVisibleEnabled(false);
+		setOptsPanelVisibleEnabled(false);
 	}
 	
 	/**
@@ -229,7 +268,7 @@ public class Controller {
 		currentState.setFileName(filename);
 		currentState.start(this, panel);
 		
-		setComponentVisibleEnabled(false);
+		setOptsPanelVisibleEnabled(false);
 
 	}
 	
@@ -268,6 +307,11 @@ public class Controller {
 		currentState.start(this, panel);
 	}
 
+	/**
+	 * Calls upon {@link #sensorThreads} to begin the sensor failure cycle
+	 * for a given sensor.
+	 * @param direction the direction of the sensor for which the failure cycle should begin
+	 */
 	public void communicateSensorTrigger(Direction direction) {
 		if(!(currentState instanceof StatePlaying)) return;
 		
@@ -290,6 +334,7 @@ public class Controller {
 	/**
 	 * Sets the robot up. Called in StatePlaying when
 	 * current position and direction have been initialized.
+	 * Also handles the driver and initializes {@link #sensorThreads}.
 	 */
 	protected void setupRobot() {
 		robot.setMaze(this);
@@ -323,7 +368,7 @@ public class Controller {
 	 * Switches the controller to the initial screen.
 	 */
 	public void switchToTitle() {
-		setComponentVisibleEnabled(true);
+		setOptsPanelVisibleEnabled(true);
 		
 		setSensorButtonsState(false);
 		
@@ -331,10 +376,15 @@ public class Controller {
 		currentState.start(this, panel);
 	}
 	
-	private void setComponentVisibleEnabled(boolean aFlag) {
+	/**
+	 * Set {@link #optsPanel} to be both visible and enabled.
+	 * @param aFlag
+	 */
+	private void setOptsPanelVisibleEnabled(boolean aFlag) {
 		optsPanel.setVisible(aFlag);
 		optsPanel.setEnabled(aFlag);
 		
+		// not necessary to do following
 		/*for(Component comp: optsPanel.getComponents()) {
 			comp.setVisible(aFlag);
 			comp.setEnabled(aFlag);
@@ -347,9 +397,14 @@ public class Controller {
 		
 		//panel.update();
 		
+		//make sure container is aware of changes
 		container.revalidate();
 	}
 	
+	/**
+	 * Set the visibility and activity of {@link #sensorButtons}.
+	 * @param aFlag true if activating, false if deactivating
+	 */
 	public void setSensorButtonsState(boolean aFlag) {
 		sensorButtons.setVisible(aFlag);
 		sensorButtons.setEnabled(aFlag);
@@ -372,6 +427,19 @@ public class Controller {
 		return currentState.keyDown(key, value);
 	}
 	
+	/**
+	 * Receives keyboard input when a robot is enabled before
+	 * {@link currentState#keyDown(UserInput, int) keyDown}. Redirects to
+	 * the {@link keyDown} method of the current state when no driver is enabled.
+	 * 
+	 * If a driver is active, then the only valid keyboard input
+	 * concerns adjustment of the maze map visibility.
+	 * Other keyboard input causes the driver to interrupt prematurely.
+	 * 
+	 * @param key key input value
+	 * @param value integer, not used in playing state
+	 * @return true for valid input, false otherwise
+	 */
 	public boolean keyDownRobot(UserInput key, int value) {
 		if(null!=driver) {
 			switch(key) {
@@ -453,6 +521,10 @@ public class Controller {
 		return driver;
 	}
 	
+	/**
+	 * get energy consumed by robot from start to now
+	 * @return robot's energy consumption
+	 */
 	public float getEnergyConsumedByRobotAtPresent() {
 		return initialRobotEnergyLevel-robot.getBatteryLevel();
 	}

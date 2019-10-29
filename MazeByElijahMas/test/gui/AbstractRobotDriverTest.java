@@ -15,51 +15,86 @@ import generation.Maze;
 import generation.MazeTestGenerator;
 import gui.Robot.Direction;
 
+/**
+ * Class that test classes can inherit from.
+ * Tests that a driver algorithm can walk a robot
+ * to the exit.
+ * @author Elijah Mas
+ *
+ */
 public abstract class AbstractRobotDriverTest {
 	
+	/**
+	 * reference to a {@link Controller}
+	 */
 	Controller controller;
+	
+	/**
+	 * reference to a {@link Robot}
+	 */
 	Robot robot;
+	
+	/**
+	 * reference to a {@link AbstractRobotDriver}
+	 */
 	AbstractRobotDriver driver;
+	
+	/**
+	 * reference to a {@link Maze}
+	 */
 	Maze maze;
+	
+	/**
+	 * reference to a {@link Floorplan}
+	 */
 	Floorplan floorplan;
+	
+	/**
+	 * reference to a {@link Distance}
+	 */
 	Distance distance;
 	
+	/**
+	 * Set a driver and do other initializations;
+	 * details handled in subclasses.
+	 */
 	abstract void setDriver();
 	
+	/**
+	 * Generate a maze and link all relevant data structures.
+	 * @param perfect maze perfect/imperfect
+	 * @param deterministic deterministic/non-deterministic generation
+	 * @param level difficulty level
+	 */
 	void setMaze(boolean perfect, boolean deterministic, int level) {
+		// no GUI, so no delay between operations
+		AbstractRobotDriver.walkDelay=0;
+		
+		//keep terminal clear
 		Controller.suppressUpdates=true;
 		Controller.suppressWarnings=true;
 		BasicRobot.VERBOSE=false;
+		
 		//System.out.println("testing maze at level "+level);
 		controller=MazeTestGenerator.getController(perfect, deterministic, level);
 		robot=controller.getRobot();
 		maze = controller.getMazeConfiguration();
 		
+		// set robot and driver
 		setDriver();
 		driver.setRobot(robot);
 		driver.setController(controller);
 		
-		
-		//System.out.printf("WallFollowerTest: robot set, robot cd=%s, driver cd =%s\n",robot.getCurrentDirection(),driver.getCurrentDirection());
-		
 		robot.setBatteryLevel(maze.getMazedists().getMaxDistance()*100);
-		//System.out.println("WallFollowerTest.setMaze: robot initial energy is "+robot.getBatteryLevel());
 	}
 	
 	void testExit(Direction... directionsOfSensorFailure) {
-		setMaze(true, true, 0);
-		
-		/*
-		for(CardinalDirection cd: CardinalDirection.values()) System.out.println(cd+": "+Arrays.toString(cd.getDirection()));
-		System.out.println(Arrays.deepToString(controller.getMazeConfiguration().getMazedists().getAllDistanceValues()).replace("], [", "],\n["));
-		System.out.println("\nstart position: "+Arrays.toString(driver.getRobotPosition())+", cd: "+robot.getCurrentDirection());
-		System.out.println("exit position: "+Arrays.toString(controller.getMazeConfiguration().getMazedists().getExitPosition()));
-		System.out.println("exit direction: "+Arrays.toString(MazeMath.getCardinalDirectionOfMazeExit(controller.getMazeConfiguration()).getDirection())+"\n");
-		 */
+		if(driver instanceof WallFollower) setMaze(true, true, 0);
+		else setMaze(false, true, 1);
 		
 		for(Direction d: directionsOfSensorFailure) {
+			// null means all sensors operational
 			if(null==d) {
-				//System.out.println("null found in testExit: breaking");
 				break;
 			}
 			robot.triggerSensorFailure(d);
@@ -71,6 +106,9 @@ public abstract class AbstractRobotDriverTest {
 		
 		try {
 			boolean exited = driver.drive2Exit();
+			if(!exited) {
+				throw new Exception();
+			}
 			assertTrue(exited);
 			assertTrue(null==driver.getRobotPosition());
 			//System.out.println("WallFollowerTest: the robot is out of the maze");

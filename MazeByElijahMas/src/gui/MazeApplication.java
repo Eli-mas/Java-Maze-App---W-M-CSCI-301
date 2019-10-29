@@ -44,16 +44,24 @@ public class MazeApplication extends JFrame {
 	// not used, just to make the compiler, static code checker happy
 	private static final long serialVersionUID = 1L;
 	
+	/**
+	 * whether a robot will be initialized
+	 */
 	private static boolean robotEnabled=true;
 	
 	public static boolean getRobotEnabled() {
 		return robotEnabled;
 	}
-
+	
+	/**
+	 * {@link SensorButtonPanel} (subclass of JPanel}
+	 * that holds buttons to trigger sensor failure/repair cycles;
+	 * see {@link Controller}.
+	 */
 	private SensorButtonPanel sensorButtons;
 
 	/**
-	 * Constructor
+	 * Default is to load no file.
 	 */
 	public MazeApplication() {
 		init(null);
@@ -122,6 +130,11 @@ public class MazeApplication extends JFrame {
 
 	/**
 	 * Initializes some internals and puts the game on display.
+	 * 
+	 * Creates panels for holding various components of game,
+	 * including options to control maze generation on title screen
+	 * and sensor buttons on playing screen.
+	 * 
 	 * @param parameter can identify a generation method (Prim, Kruskal, Eller)
      * or a filename that contains a generated maze that is then loaded, or can be null
 	 */
@@ -150,50 +163,64 @@ public class MazeApplication extends JFrame {
 		
 		GridLayout layout = new GridLayout(1,4);
 		
-		JPanel master = new JPanel();
-		master.setLayout(layout);
+		// master holds the panels that control maze generation/traversal parameters
+		// (maze generation algorithm, difficulty, driver algorithm)
+		JPanel optsPanel = new JPanel();
+		//arrange in a grid layout
+		optsPanel.setLayout(layout);
 		
+		// panel to hold the start button
 		StartPanel start = new StartPanel();
+		// start button requires reference to controller
 		start.setController(controller);
-		master.add(start) ;
 		
 		
-		//levelStrings.add(0,"(select one...)");
 		
+		// box to select difficulty level
 		JComboBox levelOptsBox =
 			new JComboBox(IntStream.range(0,Constants.SKILL_X.length).mapToObj(Integer::valueOf).toArray());
 		levelOptsBox.setName("Levels");
 		
+		// box to select maze generation algorithm
 		JComboBox mazeOptsBox = new JComboBox(new String[] {"DFS", "Eller", "Prim"});//, "Kruskal"
 		mazeOptsBox.setName("Mazes");
 		
+		// box to select driver algorithm
 		JComboBox driverOptsBox = new JComboBox(new String[] {"(None)","Wizard", "WallFollower"});
 		
+		// panel to hold box for maze generation options and provide descriptive text
 		JPanel mazeOptsPanel = new JPanel();
 		mazeOptsPanel.setName("mazes panel");
 		mazeOptsPanel.add(new JLabel("Type:"));
 		mazeOptsPanel.add(mazeOptsBox);
 		
+		// panel to hold box for difficulty options and provide descriptive text
 		JPanel levelOptsPanel = new JPanel();
 		levelOptsPanel.add(new JLabel("Difficulty:"));
 		levelOptsPanel.setName("levels panel");
 		levelOptsPanel.add(levelOptsBox);
 		
+		// panel to hold box for driver options and provide descriptive text
 		JPanel driverOptsPanel = new JPanel();
 		driverOptsPanel.add(new JLabel("Driver:"));
 		driverOptsPanel.setName("driver panel");
 		driverOptsPanel.add(driverOptsBox);
 		
-		master.add(mazeOptsPanel) ;
-		master.add(levelOptsPanel) ;
-		master.add(driverOptsPanel) ;
+		// add everything to master
+		optsPanel.add(start) ;
+		optsPanel.add(mazeOptsPanel) ;
+		optsPanel.add(levelOptsPanel) ;
+		optsPanel.add(driverOptsPanel) ;
 		
+		// link boxes to start so that it can transfer data from these boxes
+		// to controller
 		start.setMazeBox(mazeOptsBox);
 		start.setLevelBox(levelOptsBox);
 		start.setDriverBox(driverOptsBox);
 		start.setContainer(this);
 		
-		master.setBounds(0, 300, 400, 100);
+		// master options panel occupies bottom of screen
+		optsPanel.setBounds(0, 300, 400, 100);
 		
 		sensorButtons = new SensorButtonPanel();
 		sensorButtons.setController(controller);
@@ -203,63 +230,22 @@ public class MazeApplication extends JFrame {
 		add(sensorButtons);
 		System.out.println("playing buttons added");
 		
-		add(master);
+		add(optsPanel);
+		
+		//leave room on screen for sensorButtons, avoid complete overlap
 		controller.getPanel().setSize(400, 400);
+		
 		add(controller.getPanel());
-		controller.setOptionsPanel(master);
+		controller.setOptionsPanel(optsPanel);
 		controller.setSensorButtons(sensorButtons);
-		//remove(master);
 		
 		revalidate();
 		
 		
 		controller.setContainer(this);
 		
+		//everything is set, get the game started
 		controller.start();
-		
-		
-		
-		
-		/*
-		mazeOptsBox.setSize(50, 50);
-		
-		levelOptsBox.setSize(50, 50);
-		
-		//controller.getPanel().setSize(100, 200);
-		
-		start.setSize(100, 100);
-		
-		
-		//controller.getPanel().setFocusable(true);
-		controller.getPanel().setVisible(true);
-		
-		JPanel jp = new JPanel();
-		jp.setSize(50, 50);
-		jp.setVisible(true);
-		jp.setBackground(Color.cyan);
-		jp.setLayout(layout);
-		
-		button.setBounds(150, 40, 100, 30);
-		button.setSize(40,20);
-		
-		jp.add(mazeOptsBox);
-		jp.add(levelOptsBox);
-		
-		controller.getPanel().add(button,0);
-		
-		master.add(jp);
-		//master.add(controller.getPanel());
-		//jp.add(start);
-		
-		//add(jp,0);
-		add(start,1);
-		
-		button.setSize(40, 20);
-		add(button,BorderLayout.NORTH);
-		revalidate();
-		
-		System.out.printf("%s, %s\n",levelOptsBox.getSelectedItem(),mazeOptsBox.getSelectedItem());
-		*/
 	}
 	
 	public void actionPerformed(ActionEvent e){
@@ -295,22 +281,35 @@ public class MazeApplication extends JFrame {
 }
 
 
+/**
+ * 
+ * @author Elijah Mas
+ * 
+ * SensorButtonPanel holds buttons to trigger cyclical
+ * failure and repair of a robot's sensor
+ * when operated by a driver.
+ *
+ */
 class SensorButtonPanel extends JPanel {
 	
 	
 	private Controller controller;
 
 	public SensorButtonPanel() {
+		//not active to start; activated in playing state
 		setVisible(false);
 		setEnabled(false);
 		setFocusable(false);
 		
 		ActionListener a = new ActionListener() {
+			// use anonymous class to allow the button press
+			// to signal the controller to trigger the failure/repair cycle
 			
 			@Override
 			public void actionPerformed(ActionEvent e) {
+				// verify that the event source was a button press
 				Object source = e.getSource();
-				if(source instanceof dButton) {//
+				if(source instanceof dButton) {
 					System.out.println("source: direction="+((dButton)source).getDirection());
 					controller.communicateSensorTrigger(((dButton)source).getDirection());
 				}
@@ -320,8 +319,13 @@ class SensorButtonPanel extends JPanel {
 		
 		for(Direction d: Direction.values()) {
 			dButton button = new dButton(d);
+			// remove focusability to prevent keyboard input
+			// from losing effect in playing state
 			button.setFocusable(false);
+			// add button to SensorButtonPanel instance
 			add(button);
+			// the action listener can extract direction from the button,
+			// so each button gets the same action listener
 			button.addActionListener(a);
 		}
 		
@@ -334,11 +338,18 @@ class SensorButtonPanel extends JPanel {
 	
 }
 
+/**
+ * Extension of JButton that provides a direction field
+ * that can be accessed externally.
+ * @author Elijah Mas
+ *
+ */
 class dButton extends JButton {
 	private Direction direction;
 	
 	
 	public dButton(Direction d) {
+		//button's identifier is the direction name
 		super(d.toString());
 		direction=d;
 	}
@@ -353,22 +364,60 @@ class dButton extends JButton {
 
 
 
+/**
+ * StartPanel holds four components:
+ * (I) a panel with a start button;
+ * (II) a panel with an option to select a maze generation algorithm
+ * (III) a panel with an option to select maze difficulty level
+ * (IV) a panel with an option to select a driver algorithm
+ * @author ElijahMas
+ *
+ */
 class StartPanel extends JPanel implements ActionListener {
 	
-	JButton b;
+	/**
+	 * button that starts the maze generation
+	 */
+	JButton startButton;
+	
+	/**
+	 * link to a {@link Controller}
+	 */
 	Controller controller;
+	
+	/**
+	 * box for level selection
+	 */
 	private JComboBox levelOptsBox;
+	
+	
+	/**
+	 * box for maze generation algorithm selection
+	 */
 	private JComboBox mazeOptsBox;
+	
+	
+	/**
+	 * box for driver algorithm selection
+	 */
 	private JComboBox driverOptsBox;
+	
+	
+	/**
+	 * reference to JFrame that holds everything
+	 */
 	private JFrame container;
 	
+	/**
+	 * Set the start button; other panels are received separately.
+	 */
 	public StartPanel() {
-		setLayout(new GridBagLayout());
-		b = new JButton("Start");
-		b.setBackground(Color.green);
+		setLayout(new GridBagLayout()); //centers the button (approximately)
+		startButton = new JButton("Start");
+		startButton.setBackground(Color.green);
 		setBackground(Color.green);
-		b.addActionListener(this);
-		add(b);
+		startButton.addActionListener(this);
+		add(startButton);
 		setName("Start");
 	}
 	
@@ -385,7 +434,7 @@ class StartPanel extends JPanel implements ActionListener {
 	}
 	
 	public JButton getButton() {
-		return b;
+		return startButton;
 	}
 	
 	public void setLevelBox(JComboBox levelOptsBox) {
@@ -396,11 +445,14 @@ class StartPanel extends JPanel implements ActionListener {
 		this.mazeOptsBox=mazeOptsBox;
 	}
 
+	/**
+	 * Receive information from other panels
+	 * and signal the controller to start maze generation.
+	 */
 	@Override
 	public void actionPerformed(ActionEvent e) {
-		System.out.println("startButton: Action performed: "+e);
-		//b.setEnabled(false);
-		//setVisible(false);
+		//System.out.println("startButton: Action performed: "+e);
+		
 		String mazeType = (String)mazeOptsBox.getSelectedItem();
 		switch(mazeType) {
 			case "Eller":
@@ -415,9 +467,13 @@ class StartPanel extends JPanel implements ActionListener {
 				break;
 			default: break;
 		}
-		controller.switchFromTitleToGenerating((Integer)levelOptsBox.getSelectedItem());
+		
 		controller.setDriverString((String)driverOptsBox.getSelectedItem());
 		
+		// everything set, generate maze
+		controller.switchFromTitleToGenerating((Integer)levelOptsBox.getSelectedItem());
+		
+		// don't lose keyboard focus from main application
 		container.requestFocusInWindow();
 		
 	}

@@ -103,24 +103,6 @@ public class StateTitle extends DefaultState {
 		// otherwise, show message that we wait for the skill level for input
 		view.redrawTitle(panel,filename);
 		
-		/*
-		//box=boxMazeOpts
-		final String[] mazeTypes = new String[] {"Plain (Falstad)", "Eller", "Prim", "Kruskal"};
-		JComboBox box = new JComboBox(mazeTypes);
-		panel.add(box);
-		System.out.println(box.getBounds());
-		box.setBounds(100, 100, 200, 20);
-		box.setBackground(Color.green);
-		box.setSelectedIndex(0);
-		box.setVisible(true);
-		//boxMazeOpts.addActionListener(this);
-		
-		JButton button = new JButton("button");
-		button.setBounds(0, 0, 40, 40);
-		button.setBackground(Color.green);
-		button.setVisible(true);
-		panel.add(button,BorderLayout.NORTH);
-		*/
 		panel.update(); // as drawing is complete, make screen update happen
 		
 		if (filename != null) {
