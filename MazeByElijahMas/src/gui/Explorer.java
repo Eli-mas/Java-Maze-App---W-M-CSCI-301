@@ -20,6 +20,14 @@ import gui.Robot.Direction;
 import gui.Robot.Turn;
 import gui.Constants;
 
+/**
+ * <b>WARNING: INCOMPLETE</b>
+ * 
+ * This class is not fully developed and should not be used at this time.
+ * 
+ * @author Elijah Mas
+ *
+ */
 public class Explorer extends AbstractRobotDriver {
 	
 	private int[][] visitCounts;

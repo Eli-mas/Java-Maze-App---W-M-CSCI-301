@@ -16,7 +16,7 @@ import generation.MazeTestGenerator;
 import gui.Robot.Direction;
 
 /**
- * Class that test classes can inherit from.
+ * Class that other test classes can inherit from.
  * Tests that a driver algorithm can walk a robot
  * to the exit.
  * 
@@ -93,10 +93,15 @@ public abstract class AbstractRobotDriverTest {
 		robot.setBatteryLevel(maze.getMazedists().getMaxDistance()*100);
 	}
 	
+	/**
+	 * Test that the driver algorithm exits the maze.
+	 * @param directionsOfSensorFailure directions of sensors to disable
+	 */
 	void testExit(Direction... directionsOfSensorFailure) {
 		if(driver instanceof WallFollower) setMaze(true, true, 0);
 		else setMaze(false, true, 1);
 		
+		// fail specified sensors
 		for(Direction d: directionsOfSensorFailure) {
 			// null means all sensors operational
 			if(null==d) {
@@ -105,6 +110,7 @@ public abstract class AbstractRobotDriverTest {
 			robot.triggerSensorFailure(d);
 		}
 		
+		// make sure sensor failure worked as intended
 		for(Direction d: directionsOfSensorFailure) {
 			assertFalse(robot.hasOperationalSensor(d));
 		}
@@ -128,6 +134,11 @@ public abstract class AbstractRobotDriverTest {
 		}
 	}
 	
+	/**
+	 * Exports data in a format for use in a Python script.
+	 * See 'sample_debug.py' in the 'extra' folder for an example of
+	 * how to use this output.
+	 */
 	void prepareForMazePlot() {
 		System.out.println("\n\n\n");
 		Maze maze = controller.getMazeConfiguration();
@@ -160,6 +171,11 @@ public abstract class AbstractRobotDriverTest {
 		assertTrue(false);
 	}
 	
+	/**
+	 * Iterate on {@link #testExit(Direction...)} over
+	 * all possible combinations of sensor failure directions,
+	 * including the case where no sensors fail.
+	 */
 	@Test
 	public void testExit() {
 		testExit((Robot.Direction)null);
