@@ -43,6 +43,14 @@ public class WallFollower extends AbstractRobotDriver {
 	public void setDistance(Distance distance) {
 		System.out.println("warning: the WallFollower class does not implement the setDistance method");
 	}
+
+	/**
+	 * WallFollower has no awareness of maze dimensions, so this is not set
+	 */
+	@Override
+	public void setDimensions(int width, int height) {
+		System.out.println("warning: the WallFollower class does not implement the setDimensions method");
+	}
 	
 	/**
 	 * The only thing this does is to change the value of {@link #delayExpand}.

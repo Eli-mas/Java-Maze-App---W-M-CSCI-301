@@ -19,6 +19,11 @@ import gui.Robot.Direction;
  * Class that test classes can inherit from.
  * Tests that a driver algorithm can walk a robot
  * to the exit.
+ * 
+ * Some methods are not tested here because they are tested
+ * by assertions in production environment--e.g.
+ * {@link RobotDriver#getEnergyConsumption()},
+ * {@link RobotDriver#getPathLength()}.
  * @author Elijah Mas
  *
  */

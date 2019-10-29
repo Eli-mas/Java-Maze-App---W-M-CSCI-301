@@ -414,7 +414,7 @@ class StartPanel extends JPanel implements ActionListener {
 	public StartPanel() {
 		setLayout(new GridBagLayout()); //centers the button (approximately)
 		startButton = new JButton("Start");
-		startButton.setBackground(Color.green);
+		startButton.setBackground(Color.green); // this doesn't work on Macs, it seems
 		setBackground(Color.green);
 		startButton.addActionListener(this);
 		add(startButton);
