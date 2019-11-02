@@ -7,7 +7,7 @@ import java.lang.Class;
 public class MazeColor {
 	//internal color representation
 	
-	public static enum Colors {white, red, orange, yellow, grey, gray, black, green, blue, violet, purple, cyan, brown};
+	public static enum Colors {white, red, orange, yellow, grey, gray, darkGray, black, green, blue, violet, purple, cyan, brown};
 	
 	/**
 	 * the red, green, blue, alpha color components.

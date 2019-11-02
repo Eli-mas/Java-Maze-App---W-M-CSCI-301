@@ -8,10 +8,12 @@ import generation.BSPLeaf;
 import generation.BSPNode;
 import generation.Floorplan;
 import generation.Wall;
-import java.awt.Color;
-import java.awt.Graphics;
-import java.awt.Graphics2D;
+//import java.awt.Color;
+//import java.awt.Graphics;
+//import java.awt.Graphics2D;
 import java.util.ArrayList;
+
+import gui.MazeColor.Colors;
 
 /**
  * This class encapsulates all functionality for drawing the current view 
@@ -73,7 +75,7 @@ public class FirstPersonView {
 	 * with the current buffer image is the responsibility of
 	 * the StatePlaying class.
 	 */
-	private Graphics2D gc; 
+	//private Graphics2D gc; 
 	
 	/**
 	 * The current position (x,y) scaled by map_unit and 
@@ -105,7 +107,12 @@ public class FirstPersonView {
 	 * interval.
 	 * The rset allows us to omit walls that are not needed.
 	 */
-	private RangeSet rSet; 
+	private RangeSet rSet;
+	
+	/**
+	 * Reference to {@link MazePanel} that handles drawing
+	 */
+	private MazePanel panel;
 	
 	// debug stuff
 	private boolean deepDebug = false;
@@ -126,7 +133,7 @@ public class FirstPersonView {
 	 * @param seenWalls to store which walls were put on display
 	 * @param bspRoot
 	 */
-	public FirstPersonView(int width, int height, int mapUnit, int stepSize, Floorplan seenWalls, BSPNode bspRoot) {
+	public FirstPersonView(int width, int height, int mapUnit, int stepSize, Floorplan seenWalls, BSPNode bspRoot, MazePanel panel) {
 		// store given parameter values
 		viewWidth = width;
 		viewHeight = height;
@@ -134,6 +141,7 @@ public class FirstPersonView {
 		this.stepSize = stepSize;
 		this.seenWalls = seenWalls;
 		this.bspRoot = bspRoot; 
+		this.panel=panel;
 		// constants and derived values
 		angle = 0; // angle for initial setting of direction is 0 == East, hidden constraint across classes
 		scaleZ = viewHeight/2;
@@ -148,15 +156,15 @@ public class FirstPersonView {
 	 * @param ang gives the current viewing angle
 	 * @param walkStep, only used to set viewX and viewY
 	 */
-	public void draw(MazePanel panel, int x, int y, int walkStep, int ang) {
+	public void draw(int x, int y, int walkStep, int ang) {
 		// obtain a Graphics2D object we can draw on
-		Graphics g = panel.getBufferGraphics() ;
+		//Graphics g = panel.getBufferGraphics() ;
         // viewers draw on the buffer graphics
-        if (null == g) {
+        if (panel.isInNoGraphicsMode()) {
             System.out.println("FirstPersonDrawer.draw: can't get graphics object to draw on, skipping redraw operation") ;
             return;
         }
-        gc = (Graphics2D) g ;
+        //gc = (Graphics2D) g ;
         
         // update fields angle, viewx, viewy for current position and viewing angle
         angle = ang ;
@@ -164,9 +172,9 @@ public class FirstPersonView {
         
         // update graphics
         // draw background figure: black on bottom half, grey on top half
-        drawBackground(g);
+        drawBackground();
         // set color to white and draw what ever can be seen from the current position
-        g.setColor(Color.white);
+        panel.setColor(Colors.white);
         // reset the set of ranges to a single new element (0,width-1)
         // to cover the full width of the view 
         // as we have not drawn any polygons (walls) yet.
@@ -207,13 +215,13 @@ public class FirstPersonView {
 	 * Note that this also erases previous drawings of maze or map.
 	 * @param graphics to draw on, must be not null
 	 */
-	private void drawBackground(Graphics graphics) {
+	private void drawBackground() {
 		// black rectangle in upper half of screen
-		graphics.setColor(Color.black);
-		graphics.fillRect(0, 0, viewWidth, viewHeight/2);
+		panel.setColor(Colors.black);
+		panel.fillRect(0, 0, viewWidth, viewHeight/2);
 		// grey rectangle in lower half of screen
-		graphics.setColor(Color.darkGray);
-		graphics.fillRect(0, viewHeight/2, viewWidth, viewHeight/2);
+		panel.setColor(Colors.darkGray);
+		panel.fillRect(0, viewHeight/2, viewWidth, viewHeight/2);
 	}
 	/**
 	 * Recursive method to explore tree of BSP nodes and draw all walls in leaf nodes 
@@ -426,7 +434,7 @@ public class FirstPersonView {
 		
 		// moved code for drawing bits and pieces into yet another method to 
 		// gain more clarity on what information is actually needed
-		gc.setColor(wall.getColor());
+		panel.setColor(wall.getColor());
 		boolean drawn = drawPolygons(x1, x2, y11, y12, y21, y22);
 		
 		if (drawn && !wall.isSeen()) {
@@ -506,7 +514,7 @@ public class FirstPersonView {
 			// debug
 			//System.out.println("polygon-x: " + xps[0] + ", " + xps[1] + ", " + xps[2] + ", " + xps[3]) ;
 			//System.out.println("polygon-y: " + yps[0] + ", " + yps[1] + ", " + yps[2] + ", " + yps[3]) ;
-			gc.fillPolygon(xps, yps, 4);
+			panel.fillPolygon(xps, yps, 4);
 			// for debugging purposes, code will draw a red line around polygon
 			// this makes individual walls visible
 			/*

@@ -165,8 +165,8 @@ public class StatePlaying extends DefaultState {
 	protected void startDrawer() {
 		firstPersonView = new FirstPersonView(Constants.VIEW_WIDTH,
 				Constants.VIEW_HEIGHT, Constants.MAP_UNIT,
-				Constants.STEP_SIZE, seenCells, mazeConfig.getRootnode()) ;
-		mapView = new Map(seenCells, 15, mazeConfig) ;
+				Constants.STEP_SIZE, seenCells, mazeConfig.getRootnode(), panel) ;
+		mapView = new Map(seenCells, 15, mazeConfig, panel) ;
 		// draw the initial screen for this state
 		draw();
 	}
@@ -368,9 +368,9 @@ public class StatePlaying extends DefaultState {
 			return;
 		}
 		// draw the first person view and the map view if wanted
-		firstPersonView.draw(panel, px, py, walkStep, angle) ;
+		firstPersonView.draw(px, py, walkStep, angle) ;
 		if (isInMapMode()) {
-			mapView.draw(panel, px, py, angle, walkStep,
+			mapView.draw(px, py, angle, walkStep,
 					isInShowMazeMode(),isInShowSolutionMode()) ;
 		}
 		
