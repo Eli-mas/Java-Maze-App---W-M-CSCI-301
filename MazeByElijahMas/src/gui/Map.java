@@ -3,6 +3,8 @@
  */
 package gui;
 
+import gui.MazeColor.Colors;
+
 import generation.CardinalDirection;
 import generation.Floorplan;
 import generation.Maze;
@@ -59,6 +61,8 @@ public class Map {
 	 * width and height of the maze
 	 */
 	final Maze maze ;
+	
+	final MazePanel panel;
 
 	/**
 	 * Constructor 
@@ -70,7 +74,7 @@ public class Map {
 	 * @param mapScale
 	 * @param maze
 	 */
-	public Map(int width, int height, int mapUnit, int stepSize, Floorplan seenWalls, int mapScale, Maze maze){
+	public Map(int width, int height, int mapUnit, int stepSize, Floorplan seenWalls, int mapScale, Maze maze, MazePanel panel){
 		//System.out.println("MapDrawer: constructor called") ;
 		viewWidth = width ;
 		viewHeight = height ;
@@ -79,6 +83,7 @@ public class Map {
 		this.seenWalls = seenWalls ;
 		this.mapScale = mapScale >= 1 ? mapScale: 1 ; // 1 <= map_scale
 		this.maze = maze ;
+		this.panel = panel;
 		// correctness considerations
 		assert maze != null : "MapDrawer: maze configuration can't be null at instantiation!" ;
 		assert seenWalls != null : "MapDrawer: seencells can't be null at instantiation!" ;
@@ -91,9 +96,9 @@ public class Map {
 	 * @param mapScale
 	 * @param maze
 	 */
-	public Map(Floorplan seenCells, int mapScale, Maze maze){
+	public Map(Floorplan seenCells, int mapScale, Maze maze, MazePanel panel){
 		this(Constants.VIEW_WIDTH,Constants.VIEW_HEIGHT,Constants.MAP_UNIT,
-    			Constants.STEP_SIZE, seenCells, mapScale, maze);
+    			Constants.STEP_SIZE, seenCells, mapScale, maze, panel);
 		}
 	
 	public void incrementMapScale() {
@@ -159,7 +164,8 @@ public class Map {
 		final int mazeWidth = maze.getWidth() ;
 		final int mazeHeight = maze.getHeight() ;
 		
-		g.setColor(Color.white);
+		//g.setColor(Color.white);
+		panel.setColor(MazeColor.Colors.white);
 		
 		// note: 1/2 of width and height is the center of the screen
 		// the whole map is centered at the current position
@@ -190,7 +196,8 @@ public class Map {
 						maze.hasWall(x,y, CardinalDirection.North) :
 							maze.hasWall(x,y-1, CardinalDirection.South));
 
-				g.setColor(seenWalls.hasWall(x,y, CardinalDirection.North) ? Color.white : Color.gray);
+				//g.setColor(seenWalls.hasWall(x,y, CardinalDirection.North) ? Color.white : Color.gray);
+				panel.setColor(seenWalls.hasWall(x,y, CardinalDirection.North) ? Colors.white : Colors.gray);
 				if ((seenWalls.hasWall(x,y, CardinalDirection.North) || showMaze) && theCondition)
 					g.drawLine(startX, startY, startX + mapScale, startY); // y coordinate same
 				
@@ -198,8 +205,9 @@ public class Map {
 				theCondition = (y >= mazeHeight) ? false : ((x < mazeWidth) ?
 						maze.hasWall(x,y, CardinalDirection.West) :
 							maze.hasWall((x-1),y, CardinalDirection.East));
-
-				g.setColor(seenWalls.hasWall(x,y, CardinalDirection.West) ? Color.white : Color.gray);
+				
+				//g.setColor(seenWalls.hasWall(x,y, CardinalDirection.West) ? Color.white : Color.gray);
+				panel.setColor(seenWalls.hasWall(x,y, CardinalDirection.West) ? Colors.white : Colors.gray);
 				if ((seenWalls.hasWall(x,y, CardinalDirection.West) || showMaze) && theCondition)
 					g.drawLine(startX, startY, startX, startY - mapScale); // x coordinate same
 			}
@@ -317,7 +325,8 @@ public class Map {
 	 * @param gc to draw on
 	 */
 	private void drawCurrentLocation(Graphics gc, int viewDX, int viewDY) {
-		gc.setColor(Color.red);
+		//gc.setColor(Color.red);
+		panel.setColor(Colors.red);
 		// draw oval of appropriate size at the center of the screen
 		int centerX = viewWidth/2; // center x
 		int centerY = viewHeight/2; // center y
@@ -393,7 +402,8 @@ public class Map {
 		int sy = py;
 		int distance = maze.getDistanceToExit(sx, sy);
 		
-		gc.setColor(Color.yellow);
+		panel.setColor(Colors.yellow);
+		//gc.setColor(Color.yellow);
 		
 		// while we are more than 1 step away from the final position
 		while (distance > 1) {

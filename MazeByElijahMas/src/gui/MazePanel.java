@@ -130,6 +130,10 @@ public class MazePanel extends JPanel  {
 		getBufferGraphics().setColor(c.export());
 	}
 	
+	public void setColor(MazeColor.Colors c){
+		getBufferGraphics().setColor(MazeColor.export(c));
+	}
+	
 	public void fillOval(int x, int y, int width, int height){
 		getBufferGraphics().fillOval(x, y, width, height);
 	}
