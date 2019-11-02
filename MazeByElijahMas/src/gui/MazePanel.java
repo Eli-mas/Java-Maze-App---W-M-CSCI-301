@@ -138,4 +138,8 @@ public class MazePanel extends JPanel  {
 		getBufferGraphics().fillOval(x, y, width, height);
 	}
 	
+	public boolean isInNoGraphicsMode() {
+		return null==getBufferGraphics();
+	}
+	
 }
