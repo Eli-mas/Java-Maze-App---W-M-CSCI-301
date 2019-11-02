@@ -1,11 +1,12 @@
 package generation;
 
-import java.awt.Color;
+//import java.awt.Color;
 import java.util.ArrayList;
 
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 
+import gui.MazeColor;
 import gui.MazeFileWriter;
 
 /**
@@ -59,7 +60,7 @@ public class Wall {
     /**
      * color of wall, only set by constructor and file reader.
      */
-    private Color col;
+    private MazeColor col;
     /**
      * partition flag.
      */
@@ -135,7 +136,7 @@ public class Wall {
      * Determine and set the color for this wall.
      *
      * @param distance
-     *            to exit
+     *            distance to exit
      * @param cc
      *            obscure
      */
@@ -144,27 +145,27 @@ public class Wall {
         // mod used to limit the number of colors to 6
         final int rgbValue = calculateRGBValue(d);
         switch (((d >> 3) ^ cc) % 6) {
-        case 0:
-            setColor(new Color(rgbValue, RGB_DEF, RGB_DEF));
-            break;
-        case 1:
-            setColor(new Color(RGB_DEF, rgbValue, RGB_DEF));
-            break;
-        case 2:
-            setColor(new Color(RGB_DEF, RGB_DEF, rgbValue));
-            break;
-        case 3:
-            setColor(new Color(rgbValue, rgbValue, RGB_DEF));
-            break;
-        case 4:
-            setColor(new Color(RGB_DEF, rgbValue, rgbValue));
-            break;
-        case 5:
-            setColor(new Color(rgbValue, RGB_DEF, rgbValue));
-            break;
-        default:
-            setColor(new Color(RGB_DEF, RGB_DEF, RGB_DEF));
-            break;
+	        case 0:
+	            setColor(new MazeColor(rgbValue, RGB_DEF, RGB_DEF));
+	            break;
+	        case 1:
+	            setColor(new MazeColor(RGB_DEF, rgbValue, RGB_DEF));
+	            break;
+	        case 2:
+	            setColor(new MazeColor(RGB_DEF, RGB_DEF, rgbValue));
+	            break;
+	        case 3:
+	            setColor(new MazeColor(rgbValue, rgbValue, RGB_DEF));
+	            break;
+	        case 4:
+	            setColor(new MazeColor(RGB_DEF, rgbValue, rgbValue));
+	            break;
+	        case 5:
+	            setColor(new MazeColor(rgbValue, RGB_DEF, rgbValue));
+	            break;
+	        default:
+	            setColor(new MazeColor(RGB_DEF, RGB_DEF, RGB_DEF));
+	            break;
         }
     }
 
@@ -288,8 +289,7 @@ public class Wall {
         if ((x != o.x) || (dx != o.dx) || (y != o.y) || (dy != o.dy)) {
             return false;
         }
-        if ((dist != o.dist) || (partition != o.partition) || (seen != o.seen)
-                || (col.getRGB() != o.col.getRGB())) {
+        if ((dist != o.dist) || (partition != o.partition) || (seen != o.seen) || !col.equals(o.col) ) {
             return false;
         }
         // all fields are equal, so both objects are equal
@@ -360,7 +360,7 @@ public class Wall {
     /**
      * @return the color
      */
-    public Color getColor() {
+    public MazeColor getColor() {
         return col;
     }
 
@@ -368,7 +368,7 @@ public class Wall {
      * @param color
      *            the color to set
      */
-    public void setColor(final Color color) {
+    public void setColor(final MazeColor color) {
         /*
          * for debugging: use random color settings such that all walls look
          * different
