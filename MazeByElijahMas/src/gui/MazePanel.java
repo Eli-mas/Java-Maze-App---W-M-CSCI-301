@@ -106,5 +106,32 @@ public class MazePanel extends JPanel  {
 		}
 		return graphics;
 	}
-
+	
+	
+	public void fillRect(int x, int y, int width, int height){
+		getBufferGraphics().fillRect(x, y, width, height);
+	}
+	
+	/*public void setBackgroundColor(int x, int y, int width, int height, MazeColor c){
+		Graphics gc = getBufferGraphics();
+		gc.setColor(c.export());
+		gc.fillRect(x, y, width, height);
+	}*/
+	
+	public void drawLine(int x1, int y1, int x2, int y2){
+		getBufferGraphics().drawLine(x1, y1, x2, y2);
+	}
+	
+	public void fillPolygon(int[] xpoints, int[] ypoints, int npoints){
+		getBufferGraphics().fillPolygon(xpoints, ypoints, npoints);
+	}
+	
+	public void setColor(MazeColor c){
+		getBufferGraphics().setColor(c.export());
+	}
+	
+	public void fillOval(int x, int y, int width, int height){
+		getBufferGraphics().fillOval(x, y, width, height);
+	}
+	
 }
