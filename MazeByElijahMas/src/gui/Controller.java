@@ -53,6 +53,18 @@ import generation.Order.Builder;
  * @author Peter Kemper
  */
 public class Controller {
+	
+	/**
+	 * suppress certain warnings from printing, used for testing
+	 */
+	public static boolean suppressWarnings=false;
+	/**
+	 * suppress certain updates from printing, used for testing
+	 */
+	public static boolean suppressUpdates=false;
+	
+	
+	
 	/**
 	 * The game has a reservoir of 4 states: 
 	 * <br>1: show the title screen, wait for user input for skill level
@@ -66,6 +78,7 @@ public class Controller {
 	 * There is no mutator method.
 	 */
 	State[] states;
+	
 	/**
 	 * The current state of the controller and the game.
 	 * All state objects share the same interface and can be
@@ -75,21 +88,37 @@ public class Controller {
 	 * switchFrom .. To .. methods.
 	 */
 	State currentState;
+	
 	/**
 	 * The panel is used to draw on the screen for the UI.
 	 * It can be set to null for dry-running the controller
 	 * for testing purposes but otherwise panel is never null.
 	 */
 	MazePanel panel;
+	
+	public MazePanel getPanel() {
+		return panel;
+	}
+	
 	/**
 	 * The filename is optional, may be null, and tells
 	 * if a maze is loaded from this file and not generated.
 	 */
 	String fileName;
+	
+	public void setFileName(String fileName) {
+		this.fileName = fileName;
+	}
+	
 	/**
 	 * The builder algorithm to use for generating a maze.
 	 */
 	Order.Builder builder;
+	
+	public void setBuilder(Builder builder) {
+		this.builder = builder; 
+	}
+	
 	/**
 	 * Specifies if the maze is perfect, i.e., it has
 	 * no loops, which is guaranteed by the absence of 
@@ -97,31 +126,27 @@ public class Controller {
 	 */
 	boolean perfect;
 	
-	/**
-	 * Used to communicate to Controller what driver should be used.
-	 * If no driver to be set, this is null.
-	 */
-	String driverString="";
+	public void setPerfect(boolean isPerfect) {
+		this.perfect = isPerfect; 
+	}
 	
-	//// Extension in preparation for Project 3: robot and robot driver //////
-	/**
-	 * The robot that interacts with the controller starting from P3
-	 */
-	Robot robot;
+	
+	
 	/**
 	 * whether a robot will be instantiated
 	 */
-	boolean robotEnabled;
-	
+	private boolean robotEnabled;
 	/**
-	 * failure message if robot encounters error
+	 * The robot that interacts with the controller
 	 */
-	private String robotFailureMessage="";
-	
+	Robot robot;
 	/**
-	 * The driver that interacts with the robot starting from P3
+	 * @return the robot, may be null
 	 */
-	RobotDriver driver;
+	public Robot getRobot() {
+		return robot;
+	}
+	
 	/**
 	 * Whether or not the robot is operated manually
 	 */
@@ -130,54 +155,96 @@ public class Controller {
 	 * Starting energy level of the robot, used to measure energy consumption
 	 */
 	float initialRobotEnergyLevel;
+	/**
+	 * get energy consumed by robot from start to now
+	 * @return robot's energy consumption
+	 */
+	public float getEnergyConsumedByRobotAtPresent() {
+		return initialRobotEnergyLevel-robot.getBatteryLevel();
+	}
+	/**
+	 * 
+	 * @return starting energy level of the robot
+	 */
+	public float getInitialRobotEnergyLevel() {
+		return initialRobotEnergyLevel;
+	}
+	
+	/**
+	 * The driver that interacts with the robot starting from P3
+	 */
+	RobotDriver driver;
+	/**
+	 * Used to communicate to Controller what driver should be used.
+	 * If no driver to be set, this is null.
+	 */
+	String driverString="";
+	
+	public void setDriverString(String s) {
+		driverString=s;
+	}
+	
+	/**
+	 * Sets the robot and robot driver
+	 * @param robot
+	 * @param robotdriver
+	 */
+	public void setRobotAndDriver(Robot robot, RobotDriver robotdriver) {
+		this.robot = robot;
+		driver = robotdriver;
+	}
+	
+	/**
+	 * @return the driver, may be null
+	 */
+	public RobotDriver getDriver() {
+		return driver;
+	}
+	
+	
+	
+	
 	
 	/**
 	 * Holds options components for selecting maze difficulty, maze type, and driver type
 	 */
-	private JPanel optsPanel;
-	
-	/**
-	 * reference to the JFrame (MazeApplication) that holds everything
-	 */
-	private Container container;
-	
+	private MPanel optsPanel;
 	/**
 	 * holds buttons that allow for triggering {@link RobotSensorTrigger} sensor failure threads
 	 */
-	private JPanel sensorButtons;
+	private MPanel sensorButtons;
+	/**
+	 * set {@link #sensorButtons} field
+	 * @param sensorButtons
+	 */
+	public void setSensorButtons(MPanel sensorButtons) {
+		this.sensorButtons=sensorButtons;
+	}
+	/**
+	 * 
+	 * @return {@link #sensorButtons} object
+	 */
+	public MPanel getSensorButtons() {
+		return sensorButtons;
+	}
+	
+	
+	
 	
 	/**
 	 * Threads that induces sensor failure cycles by way of {@link RobotSensorTrigger} instances
 	 */
 	private HashMap<Direction,Thread> sensorThreads;
-	
-	public Container getContainer() {
-		return container;
-	}
-	
-	public void setSensorButtons(JPanel sensorButtons) {
-		this.sensorButtons=sensorButtons;
-	}
-	
-	public JPanel getSensorButtons() {
-		return sensorButtons;
-	}
-	
-	/**
-	 * suppress certain warnings from printing, used for testing
-	 */
-	public static boolean suppressWarnings=false;
-	/**
-	 * suppress certain updates from printing, used for testing
-	 */
-	public static boolean suppressUpdates=false;
-	
 	/**
 	 * default is to not initialize a robot
 	 */
 	public Controller() {
 		init(false);
 	}
+	
+	
+	
+	
 	
 	/**
 	 * Constructor that allows for enabling robot
@@ -186,15 +253,6 @@ public class Controller {
 	public Controller(boolean enableRobot) {
 		init(enableRobot);
 	}
-	
-	public void setDriverString(String s) {
-		driverString=s;
-	}
-	
-	public void setContainer(Container app) {
-		this.container=app;
-	}
-	
 	/**
 	 * Set the {@link State} instances of the controller and other parameters
 	 * used in maze generation.
@@ -214,18 +272,6 @@ public class Controller {
 		robotEnabled = enableRobot? true: false;
 	}
 	
-	public void setFileName(String fileName) {
-		this.fileName = fileName;
-	}
-	public void setBuilder(Builder builder) {
-		this.builder = builder; 
-	}
-	public void setPerfect(boolean isPerfect) {
-		this.perfect = isPerfect; 
-	}
-	public MazePanel getPanel() {
-		return panel;
-	}
 	/**
 	 * Starts the controller and begins the game 
 	 * with the title screen.
@@ -238,7 +284,7 @@ public class Controller {
 		fileName = null; // reset after use
 	 }
 	
-	public void setOptionsPanel(JPanel optsPanel) {
+	public void setOptionsPanel(MPanel optsPanel) {
 		this.optsPanel = optsPanel;
 	}
 	   
@@ -255,7 +301,7 @@ public class Controller {
 		currentState.setBuilder(builder); 
 		currentState.setPerfect(perfect); 
 		currentState.start(this, panel);
-		setOptsPanelVisibleEnabled(false);
+		optsPanel.setVisibleEnabled(false);//setOptsPanelVisibleEnabled(false);
 	}
 	
 	/**
@@ -268,7 +314,7 @@ public class Controller {
 		currentState.setFileName(filename);
 		currentState.start(this, panel);
 		
-		setOptsPanelVisibleEnabled(false);
+		optsPanel.setVisibleEnabled(false);
 
 	}
 	
@@ -288,7 +334,6 @@ public class Controller {
 		
 		if(robotEnabled){
 			RobotDriver new_driver=null;
-			//System.out.println("Controller: initializing the robot");
 			switch(driverString) {
 				case "Wizard":
 					new_driver=new Wizard();
@@ -306,7 +351,32 @@ public class Controller {
 		}
 		currentState.start(this, panel);
 	}
+	
+	/**
+	 * Switches the controller to the final screen
+	 * @param pathLength gives the length of the path
+	 */
+	public void switchFromPlayingToWinning(int pathLength) {
+		currentState = states[3];
+		currentState.setPathLength(pathLength);
+		currentState.start(this, panel);
+	}
+	
+	/**
+	 * Switches the controller to the initial screen.
+	 */
+	public void switchToTitle() {
+		optsPanel.setVisibleEnabled(true);
+		
+		sensorButtons.setVisibleEnabled(false);
+		
+		currentState = states[0];
+		currentState.start(this, panel);
+	}
 
+	
+	
+	
 	/**
 	 * Calls upon {@link #sensorThreads} to begin the sensor failure cycle
 	 * for a given sensor.
@@ -332,85 +402,33 @@ public class Controller {
 	}
 	
 	/**
-	 * Sets the robot up. Called in StatePlaying when
-	 * current position and direction have been initialized.
-	 * Also handles the driver and initializes {@link #sensorThreads}.
+	 * Sets the robot and driver up and initializes {@link #sensorThreads} if required.
+	 * Called in StatePlaying when current position and direction have been initialized.
 	 */
 	protected void setupRobot() {
 		robot.setMaze(this);
 		setInitialRobotEnergyLevel(robot.getBatteryLevel());
+		
 		RobotDriver driver = getDriver();
-		if(null != driver) driver.setRobot(robot);
-		if(driver instanceof Wizard) ((Wizard)driver).setMaze(getMazeConfiguration());
-		if(null!=panel && null!=robot && null!=driver) {
-		//	robot.triggerSensorFailure(Direction.FORWARD);
-		//	robot.triggerSensorFailure(Direction.LEFT);
-			sensorThreads = new HashMap<Direction, Thread>(4);
-			for(Direction d: Direction.values()) {
-				Thread t = new Thread(new RobotSensorTrigger(d,driver,robot,this));
-				sensorThreads.put(d, t);
+		
+		if(null != driver) {
+			driver.setRobot(robot);
+			if(driver instanceof Wizard) ((Wizard)driver).setMaze(getMazeConfiguration());
+			
+			if(null!=panel) {
+				sensorThreads = new HashMap<Direction, Thread>(4);
+				
+				for(Direction d: Direction.values()) {
+					Thread t = new Thread(new RobotSensorTrigger(d,driver,robot,this));
+					sensorThreads.put(d, t);
+				}
 			}
 		}
-		//System.out.println("initialRobotEnergyLevel="+initialRobotEnergyLevel);
+		
 	}
 	
-	/**
-	 * Switches the controller to the final screen
-	 * @param pathLength gives the length of the path
-	 */
-	public void switchFromPlayingToWinning(int pathLength) {
-		currentState = states[3];
-		currentState.setPathLength(pathLength);
-		currentState.start(this, panel);
-	}
 	
-	/**
-	 * Switches the controller to the initial screen.
-	 */
-	public void switchToTitle() {
-		setOptsPanelVisibleEnabled(true);
-		
-		setSensorButtonsState(false);
-		
-		currentState = states[0];
-		currentState.start(this, panel);
-	}
 	
-	/**
-	 * Set {@link #optsPanel} to be both visible and enabled.
-	 * @param aFlag
-	 */
-	private void setOptsPanelVisibleEnabled(boolean aFlag) {
-		optsPanel.setVisible(aFlag);
-		optsPanel.setEnabled(aFlag);
-		
-		// not necessary to do following
-		/*for(Component comp: optsPanel.getComponents()) {
-			comp.setVisible(aFlag);
-			comp.setEnabled(aFlag);
-			System.out.println(comp.getName()+": "+aFlag);
-		}
-		*/
-		
-		optsPanel.update(optsPanel.getGraphics());
-		optsPanel.repaint();
-		
-		//panel.update();
-		
-		//make sure container is aware of changes
-		container.revalidate();
-	}
-	
-	/**
-	 * Set the visibility and activity of {@link #sensorButtons}.
-	 * @param aFlag true if activating, false if deactivating
-	 */
-	public void setSensorButtonsState(boolean aFlag) {
-		sensorButtons.setVisible(aFlag);
-		sensorButtons.setEnabled(aFlag);
-		sensorButtons.repaint();
-		sensorButtons.getParent().revalidate();
-	}
 	
 	/**
 	 * <p>Method incorporates all reactions to keyboard input in original code. 
@@ -481,6 +499,9 @@ public class Controller {
 		}
 	}
 	
+	
+	
+	
 	/**
 	 * Turns of graphics to dry-run controller for testing purposes.
 	 * This is irreversible. 
@@ -489,49 +510,6 @@ public class Controller {
 		panel = null;
 	}
 	
-	/**
-	 * Sets the robot and robot driver
-	 * @param robot
-	 * @param robotdriver
-	 */
-	public void setRobotAndDriver(Robot robot, RobotDriver robotdriver) {
-		this.robot = robot;
-		driver = robotdriver;
-	}
-	
-	public void setRobotFailureMessage(String m) {
-		robotFailureMessage=m;
-	}
-	
-	public String getRobotFailureMessage() {
-		return robotFailureMessage;
-	}
-	
-	/**
-	 * @return the robot, may be null
-	 */
-	public Robot getRobot() {
-		return robot;
-	}
-	
-	/**
-	 * @return the driver, may be null
-	 */
-	public RobotDriver getDriver() {
-		return driver;
-	}
-	
-	/**
-	 * get energy consumed by robot from start to now
-	 * @return robot's energy consumption
-	 */
-	public float getEnergyConsumedByRobotAtPresent() {
-		return initialRobotEnergyLevel-robot.getBatteryLevel();
-	}
-	
-	public float getInitialRobotEnergyLevel() {
-		return initialRobotEnergyLevel;
-	}
 	
 	
 	

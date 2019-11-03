@@ -15,6 +15,10 @@ public class Constants {
 	public static final int MAP_UNIT = 128;
 	public static final int VIEW_OFFSET = MAP_UNIT/8;
 	public static final int STEP_SIZE = MAP_UNIT/4;
+	
+	public static final int OPTS_PANEL_HEIGHT = 100;
+	public static final int SENSOR_BUTTONS_HEIGHT = 30;
+	
 	// Skill-level 
 	// The user picks a skill level between 0 - 9, a-f 
 	// The following arrays transform this into corresponding dimensions (x,y) for the resulting maze as well as the number of rooms and parts

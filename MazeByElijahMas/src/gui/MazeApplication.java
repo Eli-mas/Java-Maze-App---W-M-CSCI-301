@@ -122,7 +122,7 @@ public class MazeApplication extends JFrame {
 	            msg = "MazeApplication: unknown parameter value: " + parameter + " ignored, operating in default mode.";
 	        }
 	    }
-	    // controller instanted and attributes set according to given input parameter
+	    // controller instantiated and attributes set according to given input parameter
 	    // output message and return controller
 	    System.out.println(msg);
 	    return result;
@@ -145,8 +145,6 @@ public class MazeApplication extends JFrame {
 	    setLayout(new BorderLayout());
 	    
 	    
-	    int sensorButtonsHeight = 30;
-	    
 	    
 		pack();
 		// instantiate a key listener that feeds keyboard input into the controller
@@ -154,7 +152,7 @@ public class MazeApplication extends JFrame {
 		KeyListener kl = new SimpleKeyListener(this, controller) ;
 		addKeyListener(kl) ;
 		// set the frame to a fixed size for its width and height and put it on display
-		setSize(400, 400+sensorButtonsHeight*2) ;
+		setSize(Constants.VIEW_WIDTH, Constants.VIEW_HEIGHT+Constants.SENSOR_BUTTONS_HEIGHT*2) ;
 		setVisible(true) ;
 		// focus should be on the JFrame of the MazeApplication and not on the maze panel
 		// such that the SimpleKeyListener kl is used
@@ -165,7 +163,7 @@ public class MazeApplication extends JFrame {
 		
 		// master holds the panels that control maze generation/traversal parameters
 		// (maze generation algorithm, difficulty, driver algorithm)
-		JPanel optsPanel = new JPanel();
+		MPanel optsPanel = new MPanel();
 		//arrange in a grid layout
 		optsPanel.setLayout(layout);
 		
@@ -220,11 +218,11 @@ public class MazeApplication extends JFrame {
 		start.setContainer(this);
 		
 		// master options panel occupies bottom of screen
-		optsPanel.setBounds(0, 300, 400, 100);
+		optsPanel.setBounds(0, Constants.VIEW_HEIGHT-Constants.OPTS_PANEL_HEIGHT, Constants.VIEW_WIDTH, Constants.OPTS_PANEL_HEIGHT);
 		
 		sensorButtons = new SensorButtonPanel();
 		sensorButtons.setController(controller);
-		sensorButtons.setBounds(0, 400, 400, sensorButtonsHeight);
+		sensorButtons.setBounds(0, Constants.VIEW_HEIGHT, Constants.VIEW_WIDTH, Constants.SENSOR_BUTTONS_HEIGHT);
 		sensorButtons.setLayout(new FlowLayout());
 		
 		add(sensorButtons);
@@ -233,16 +231,13 @@ public class MazeApplication extends JFrame {
 		add(optsPanel);
 		
 		//leave room on screen for sensorButtons, avoid complete overlap
-		controller.getPanel().setSize(400, 400);
+		controller.getPanel().setSize(Constants.VIEW_WIDTH, Constants.VIEW_HEIGHT);
 		
 		add(controller.getPanel());
 		controller.setOptionsPanel(optsPanel);
 		controller.setSensorButtons(sensorButtons);
 		
 		revalidate();
-		
-		
-		controller.setContainer(this);
 		
 		//everything is set, get the game started
 		controller.start();
@@ -282,6 +277,30 @@ public class MazeApplication extends JFrame {
 
 
 /**
+ * Extends functionality of {@link JPanel}.
+ * @author Elijah Mas
+ *
+ */
+class MPanel extends JPanel{
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 1L;
+
+	/**
+	 * Set the visibility/activity state of the panel,
+	 * repaint it, and revalidate its parent.
+	 * @param aFlag boolean telling whether panel should be visible/active
+	 */
+	public void setVisibleEnabled(boolean aFlag) {
+		setVisible(aFlag);
+		setEnabled(aFlag);
+		repaint();
+		getParent().revalidate();
+	}
+}
+
+/**
  * 
  * @author Elijah Mas
  * 
@@ -290,9 +309,13 @@ public class MazeApplication extends JFrame {
  * when operated by a driver.
  *
  */
-class SensorButtonPanel extends JPanel {
+class SensorButtonPanel extends MPanel {
 	
 	
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 1L;
 	private Controller controller;
 
 	public SensorButtonPanel() {
@@ -345,6 +368,10 @@ class SensorButtonPanel extends JPanel {
  *
  */
 class dButton extends JButton {
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 1L;
 	private Direction direction;
 	
 	
@@ -375,6 +402,11 @@ class dButton extends JButton {
  */
 class StartPanel extends JPanel implements ActionListener {
 	
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 1L;
+
 	/**
 	 * button that starts the maze generation
 	 */

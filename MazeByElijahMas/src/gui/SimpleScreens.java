@@ -63,7 +63,7 @@ public class SimpleScreens {
 		// make a list and add title/attribution
 		ArrayList<Object[]> fontProp = new ArrayList<Object[]>(Arrays.asList(
 			new Object[] {"MAZE", 100, Color.red, largeBannerFont},
-			new Object[] {"by Paul Falstad\nwww.falstad.com", 190, Color.blue, smallBannerFont}
+			new Object[] {"by Paul Falstad\nwww.falstad.com", 160, Color.blue, smallBannerFont}
 		));
 		
 		
@@ -71,8 +71,8 @@ public class SimpleScreens {
 		// otherwise prompt user for input
 		if (null == filename) {
 			// default instructions
-			fontProp.add(new Object[] {"To start, select a skill level.", 250, Color.black, new Font("Times Roman",Font.BOLD,20)});
-			fontProp.add(new Object[] {"(Press a number from 0 to 9\nor a letter from A to F),", 320, null, smallBannerFont});
+			fontProp.add(new Object[] {"To start,\nselect maze parameters\nand push the start button.", 270, Color.black, new Font("Times Roman",Font.BOLD,20)});
+			//fontProp.add(new Object[] {"(Press a number from 0 to 9\nor a letter from A to F),", 320, null, smallBannerFont});
 		}
 		else // message if maze is loaded from file
 			fontProp.add(new Object[] {
