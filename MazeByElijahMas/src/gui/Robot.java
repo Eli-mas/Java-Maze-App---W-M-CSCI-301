@@ -71,6 +71,21 @@ public interface Robot {
 	int[] getCurrentPosition() throws Exception;
 	
 	/**
+	 * Wrapper around {@link #getCurrentPosition()} that prevents exception throw
+	 * by returning {@code null} if the robot is outside the maze;
+	 * otherwise returns the robot's position.
+	 * @return robot's position if valid, otherwise {@code null}
+	 */
+	default int[] tryGetCurrentPosition() {
+		try {
+			return getCurrentPosition();
+		} catch (Exception e) {
+			// e.printStackTrace();
+			return null;
+		}
+	}
+	
+	/**
 	 * Provides the current cardinal direction.
 	 * @return cardinal direction is robot's current direction in absolute terms
 	 */	
@@ -283,5 +298,16 @@ public interface Robot {
 	 * to end with a failure.
 	 */
 	void jump() throws Exception;
+	
+	/**
+	 * If the robot fails for some reason,
+	 * this method returns an explanatory message.
+	 * Implementations can choose to implement this selectively;
+	 * if not implemented, default behavior is to return {@code null}.
+	 * @return message explaining reason for robot failure
+	 */
+	default String getFailureMessage() {
+		return null;
+	}
 
 }

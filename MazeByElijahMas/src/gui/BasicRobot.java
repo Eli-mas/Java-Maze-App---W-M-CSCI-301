@@ -2,7 +2,7 @@ package gui;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
+//import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 
@@ -12,7 +12,6 @@ import generation.Floorplan;
 import generation.Distance;
 import generation.Maze;
 import gui.Constants.UserInput;
-import gui.Robot.Turn;
 
 /**
  * 
@@ -29,9 +28,9 @@ import gui.Robot.Turn;
  * It receives key commands redirected by the Controller to the robot
  * from {@link gui.SimpleKeyListener}.</p>
  * 
- * <p>In a forthcoming project it will be driven by a {@link RobotDriver}
- * to explore a maze programmatically. Algorithms to be implemented:
- * Wall-Follower &#38; Wizard.
+ * <p>The robot may be driven by a {@link RobotDriver}
+ * to explore a maze programmatically:
+ * {@link WallFollower} &#38; {@link Wizard}.
  * </p>
  * 
  * @author Elijah Mas
@@ -70,10 +69,10 @@ public class BasicRobot implements Robot {
 	 */
 	private Maze maze;
 	
-	/**
+	/*
 	 * width & height of the maze
-	 */
 	private int width, height;
+	 **/
 	
 	/**
 	 * {@link Floorplan floorplan} of {@link #maze}
@@ -93,10 +92,10 @@ public class BasicRobot implements Robot {
 	 */
 	private boolean roomSensorIsPresent;
 	
-	/**
+	/*
 	 * tells whether the robot is fully initialized
-	 */
 	private boolean initialized;
+	 **/
 	
 	/**
 	 * tells whether the robot is stopped
@@ -114,25 +113,20 @@ public class BasicRobot implements Robot {
 	private CardinalDirection currentDirection;
 	
 	/**
-	 * failure message when the robot tries to jump out of the maze
-	 */
-	public static final String badJumpMessage="robot tried bad jump";
-	
-	/**
-	 * failure message when the robot crashes into a wall
-	 */
-	public static final String badMoveMessage="robot crashed";
-	
-	/**
-	 * failure message when the robot runs out of battery
-	 */
-	public static final String noEnergyMessage="robot out of energy";
-	
-	/**
 	 * initial battery level before robot begins activity;
 	 * public so that it can be modified during testing.
 	 */
-	public float initialEnergyLevel=3000f;
+	private float initialEnergyLevel=3000f;
+
+	private String failureMessage;
+	
+	public float getInitialEnergyLevel() {
+		return initialEnergyLevel;
+	}
+	
+	public void setInitialEnergyLevel(float e) {
+		initialEnergyLevel = e;
+	}
 	
 	/**
 	 * allows for printing information about robot while operating;
@@ -140,11 +134,6 @@ public class BasicRobot implements Robot {
 	 */
 	public static boolean VERBOSE=true;
 	
-	
-	//private static HashMap<Integer,Direction> create_obstacleDistancesIndices(){
-	//	HashMap<Integer,Direction> map = new HashMap<Integer,Direction>(4);
-	//	
-	//}
 	
 	/**
 	 * a jump consumes 50 battery units.
@@ -171,18 +160,6 @@ public class BasicRobot implements Robot {
 	 */
 	final static float energyUsedForDistanceSensing=1;
 	
-	/*
-	public Controller getController() {
-		return control;
-	}
-	*/
-	
-	/*
-	public String getDistanceString() {
-		return obstacleDistancesForwardRightBackwardLeft.toString();
-	}
-	 */
-	
 	@Override
 	public CardinalDirection getCurrentDirection() {
 		return currentDirection;
@@ -197,15 +174,6 @@ public class BasicRobot implements Robot {
 	public void setBatteryLevel(float level) {
 		batteryLevel=level;
 	}
-	
-	/*
-	 * Tell whether the robot still has energy in the battery.
-	 * 
-	 * @return whether robot has battery remaining
-	private boolean hasBattery() {
-		return getBatteryLevel()>0;
-	}
-	 **/
 
 	@Override
 	public boolean hasStopped() {
@@ -246,12 +214,6 @@ public class BasicRobot implements Robot {
 	 */
 	public BasicRobot() {}
 	
-	/*
-	public void initializeEnergy(float amount) {
-		initialEnergyLevel=amount;
-	}
-	*/
-	
 	/**
 	 * Instantiate all the fields of the robot that depend on the maze.
 	 * The maze must be fully initialized before this is called. 
@@ -269,8 +231,8 @@ public class BasicRobot implements Robot {
 		
 		roomSensorIsPresent=true;
 		maze=control.getMazeConfiguration();
-		width=maze.getWidth();
-		height=maze.getHeight();
+		//width=maze.getWidth();
+		//height=maze.getHeight();
 		floorplan=maze.getFloorplan();
 		distance=maze.getMazedists();
 		//dists=distance.getAllDistanceValues();
@@ -287,7 +249,7 @@ public class BasicRobot implements Robot {
 		
 		calculateDistances();
 		
-		initialized=true;
+		//initialized=true;
 	}
 
 	/**
@@ -312,13 +274,6 @@ public class BasicRobot implements Robot {
 					Arrays.toString(currentPosition), maze.getWidth() ,maze.getHeight() ));
 		return currentPosition;
 	}
-	
-	/*
-	 * Stop the robot if the battery has run out.
-	private void stopIfNoBattery() {
-		if(!hasBattery()) setStopped();
-	}
-	 **/
 
 	@Override
 	public boolean isAtExit() {
@@ -326,7 +281,6 @@ public class BasicRobot implements Robot {
 			// distance maintains the maze's exit position
 			return Arrays.equals(getCurrentPosition(), distance.getExitPosition());
 		} catch (Exception e) {
-			// if(VERBOSE) System.out.println("BasicRobot: failed to evaluate 'isAtExit':");
 			// e.printStackTrace();
 			return false;
 		}
@@ -343,7 +297,6 @@ public class BasicRobot implements Robot {
 			return (Integer.MAX_VALUE==distanceToObstacle(direction));
 		} catch (Exception e) {
 			//e.printStackTrace();
-			//return false;
 			throw new UnsupportedOperationException(
 					"operation 'canSeeThroughTheExitIntoEternity' failed", e);
 		}
@@ -356,7 +309,7 @@ public class BasicRobot implements Robot {
 			throw new UnsupportedOperationException("cannot sense presence in room: room sensor not present");
 		
 		
-		int[] pos = catchPosition();
+		int[] pos = tryGetCurrentPosition();
 		return (null==pos) ? false : floorplan.isInRoom(pos);
 	}
 
@@ -410,17 +363,21 @@ public class BasicRobot implements Robot {
 	 */
 	private int calculateObstacleDistance(Direction direction) throws Exception {
 		if(!hasOperationalSensor(direction)) {
+			// no sensor --> set to nonce value -1
 			obstacleDistancesForwardRightBackwardLeft.set(MazeMath.getDirectionIndex(direction), -1);
 			throw new UnsupportedOperationException(
 					"cannot calculate distance: "+direction+" sensor not operational");
 		}
 		try {
+			// fail if no energy
 			if(!attemptEnergyDepletion(energyUsedForDistanceSensing)) return -1;
-			int d = getObstacleDistance(direction);
 			
+			//get obstacle distance and assign to appropriate location
+			int d = getObstacleDistance(direction);
 			obstacleDistancesForwardRightBackwardLeft.set(MazeMath.getDirectionIndex(direction), d);
 			
 			return d;
+			
 		} catch (Exception e){
 			throw new UnsupportedOperationException(
 					"distanceToObstacle at direction "+direction+" failed:",e);
@@ -457,6 +414,10 @@ public class BasicRobot implements Robot {
 		return true;
 	}
 	
+	/**
+	 * Tells whether the robot has any inoperable sensors.
+	 * @return true if any sensor is inoperable, false otherwise
+	 */
 	private boolean hasMissingSensors() {
 		for(Direction d: Direction.values()) {
 			if(!hasOperationalSensor(d)) return true;
@@ -469,48 +430,36 @@ public class BasicRobot implements Robot {
 	 * Cause a failure if energy is depleted.
 	 */
 	private void rotateRight() {
-		//if(VERBOSE) System.out.printf("robot is rotating RIGHT from %s: %s",currentDirection,obstacleDistancesForwardRightBackwardLeft);
-		
-		
 		// check that we don't run out of energy before attempting rotation
 		if(!attemptEnergyDepletion(energyUsedForRotation)) return;
 		
+		/*
 		// moving right is aligned with moving forward in array
 		// which means: for what was right to become the new forward,
 		// we have to rotate the array backwards
-		/*if(hasMissingSensors()) Collections.rotate(obstacleDistancesForwardRightBackwardLeft, -1);
+		if(hasMissingSensors()) Collections.rotate(obstacleDistancesForwardRightBackwardLeft, -1);
 		else {
 			if(hasStopped()) return;
-		}*/
+		}
+		*/
 		
 		// convert a turn to a cardinal direction and set current direction for robot
-		currentDirection=MazeMath.getFrom(getCurrentDirection(), Turn.RIGHT);//MazeMath.turnToCardinalDirection(Turn.RIGHT, getCurrentDirection());
+		currentDirection=MazeMath.getFrom(getCurrentDirection(), Turn.RIGHT);
 		calculateDistances();
 		if(hasStopped()) return;
 		// sets current direction for controller
 		control.keyDown(UserInput.Right, 0);
 		
 		// check for agreement between robot & controller
-		checkOrientation();// assert control.getCurrentDirection()==currentDirection;
-		//if(VERBOSE) System.out.printf(" --> %s, now facing %s\n",obstacleDistancesForwardRightBackwardLeft,currentDirection);
+		checkOrientation();
 		
 	}
-	
-	/*
-	private ArrayList<Integer> cloneDistances() {
-		return new ArrayList<Integer>(obstacleDistancesForwardRightBackwardLeft);
-	}
-	*/
 	
 	/**
 	 * Rotate the robot leftwards, adjusting required fields.
 	 * Cause a failure if energy is depleted.
 	 */
 	private void rotateLeft() {
-		
-		//if(VERBOSE) System.out.printf("robot is rotating LEFT from %s: %s",currentDirection,obstacleDistancesForwardRightBackwardLeft);
-
-		
 		// check that we don't run out of energy before attempting rotation
 		if(!attemptEnergyDepletion(energyUsedForRotation)) return;
 		
@@ -521,15 +470,14 @@ public class BasicRobot implements Robot {
 		}*/
 		
 		// convert a turn to a cardinal direction and set current direction for robot
-		currentDirection=MazeMath.getFrom(getCurrentDirection(), Turn.LEFT);//MazeMath.turnToCardinalDirection(Turn.LEFT, getCurrentDirection());
+		currentDirection=MazeMath.getFrom(getCurrentDirection(), Turn.LEFT);
 		calculateDistances();
 		if(hasStopped()) return;
 		// sets current direction for controller
 		control.keyDown(UserInput.Left, 0);
 		
 		// check for agreement between robot & controller
-		checkOrientation();// assert control.getCurrentDirection()==currentDirection;
-		//if(VERBOSE) System.out.printf(" --> %s, now facing %s\n",obstacleDistancesForwardRightBackwardLeft,currentDirection);
+		checkOrientation();
 	}
 	
 	@Override
@@ -537,76 +485,39 @@ public class BasicRobot implements Robot {
 		if(null==turn) return;
 		
 		if(hasStopped()) {
-			//if(VERBOSE) System.out.println("the robot has stopped; cannot perform rotate operation");
 			return;
 		}
-		// we know how much energy should be used, so let's store the value for a test
-		Float expectedEnergyDifference, energyBeforeRotation = getBatteryLevel();
 		switch(turn) {
 			case RIGHT:
 				rotateRight();
-				expectedEnergyDifference=energyUsedForRotation;
 				break;
 			case LEFT:
 				rotateLeft();
-				expectedEnergyDifference=energyUsedForRotation;
 				break;
 			case AROUND:
-				//if(VERBOSE) System.out.println("robot is rotating AROUND: ");
-				
 				// two rotations in same direction, which direction does not matter
 				rotateLeft();
 				rotateLeft();
-				expectedEnergyDifference=2*energyUsedForRotation;
 				break;
 			default:
-				System.out.println("!   !   !   !   INVALID TURN VALUE SPECIFIED   !   !   !   !");
-				expectedEnergyDifference=null;
-		}
-		
-		// implementation changed: distanceToObstacle now is less optimized,
-		// the following may not hold
-		
-		/*// if we stopped, we didn't use the expected energy; if not, we can check this
-		if(!hasStopped() && !hasMissingSensors()) assert energyBeforeRotation-getBatteryLevel() == expectedEnergyDifference :
-			"energy difference before/after rotation: "+
-			(energyBeforeRotation-getBatteryLevel())+
-			", exepcted: "+expectedEnergyDifference;*/
-	}
-	
-	private int[] catchPosition() {
-		try {
-			return getCurrentPosition();
-		}
-		catch (Exception e) {
-			//e.printStackTrace();
-			return null;
+				System.out.printf("!   !   !   !   BasicRobot: invalid turn value specified: %s   !   !   !   !", turn);
 		}
 	}
 	
 	@Override
 	public void move(int distance, boolean manual){
 		if(distance<0) {
-			//if(VERBOSE) System.out.println("BasicRobot.move: cannot move negative distance");
-			
 			return;
 		}
 		
 		for(int moveCount=0; moveCount<distance; moveCount++) {
 			if(hasStopped()) {
-				//if(VERBOSE) System.out.println("the robot has stopped; cannot perform move operation");
-				
 				return;
 			}
 			
-			// use energies for another usage check
-			float energyBeforeMove=getBatteryLevel();
-			
-			int[] position=catchPosition();
+			int[] position=tryGetCurrentPosition();
 			
 			moveSingle(manual);
-			
-			float energyAfterMove=getBatteryLevel();
 			
 			// if robot has stopped, no reason to check energies below, as calculations stop
 			if(hasStopped()) return;
@@ -617,26 +528,11 @@ public class BasicRobot implements Robot {
 				
 				int delta=MazeMath.manhattanDistance(position, newPosition);
 				assert (1==delta || 0==delta);
-				
-				// energy used should be sum of move energy + sensing energy for both side sensors
-				// if robot did not move (it tried to move into wall), then only move energy is used,
-				//     distances are not re-calculated
-				/*if(1==delta) assert (energyBeforeMove-energyAfterMove)==
-						(
-							energyUsedForMove +
-							(hasOperationalSensor(Direction.LEFT) ? 1 : 0) +
-							(hasOperationalSensor(Direction.RIGHT) ? 1 : 0)
-						):
-					energyBeforeMove+", "+energyAfterMove+" at "+Arrays.toString(currentPosition);*/
 			}
 			catch (Exception e) {
 				// we get here if the robot moves out of the maze
-				// if the robot is outside the maze, there is no reason to calculate distances
-				// so the only energy used is that of the move
-				assert (energyBeforeMove-energyAfterMove)==energyUsedForMove:
-					energyBeforeMove+", "+energyAfterMove+" at "+Arrays.toString(currentPosition);
-				
-				return;}
+				return;
+			}
 		}
 	}
 	
@@ -657,8 +553,16 @@ public class BasicRobot implements Robot {
 	 */
 	private void endGame(String failureMessage) {
 		setStopped();
-		control.setRobotFailureMessage(failureMessage);
+		setFailureMessage(failureMessage);
 		control.switchFromPlayingToWinning(odometerReading);
+	}
+	
+	private void setFailureMessage(String failureMessage) {
+		this.failureMessage = failureMessage;
+	}
+	
+	public String getFailureMessage() {
+		return failureMessage;
 	}
 	
 	/**
@@ -678,7 +582,7 @@ public class BasicRobot implements Robot {
 			
 			if(!manual) {
 				//System.out.println("ending game");
-				endGame(badMoveMessage);
+				endGame(Constants.robotFailureMessage__BadMove);
 			}
 		}
 		else {
@@ -694,12 +598,8 @@ public class BasicRobot implements Robot {
 			if(hasStopped()) return;
 			
 			control.keyDown(UserInput.Up, 0);
-			//System.out.println("moveSingle: currentPosition="+Arrays.toString(currentPosition));
-			//try {getCurrentPosition();}
-			//catch (Exception e) {return;}
 			
-			checkOrientation();//assert Arrays.equals(control.getCurrentPosition(), currentPosition);
-			//if(VERBOSE) System.out.printf("%s  - %s\n",obstacleDistancesForwardRightBackwardLeft,Arrays.toString(currentPosition));
+			checkOrientation();
 		}
 	}
 	
@@ -709,7 +609,7 @@ public class BasicRobot implements Robot {
 			assert control.getCurrentDirection()==currentDirection;
 		}
 		catch (AssertionError e){
-			System.out.println("controller and robot out of sync: exiting session");
+			System.out.println("controller and robot out of sync");
 			//control.switchToTitle();
 		}
 	}
@@ -717,22 +617,16 @@ public class BasicRobot implements Robot {
 	@Override
 	public void jump() throws Exception {
 		if(hasStopped()) {
-			//if(VERBOSE) System.out.println("the robot has stopped; cannot perform jump operation");
-			
 			return;
 		}
 		
 		if(!atForwardWall()) {
-			//case where a jump is not required, a walk suffices
-			//if(VERBOSE) System.out.println("jump is not required: performing move operation");
 			move(1,control.manualRobotOperation);
 		}
 		
 		else { // jump required
 			
 			float energyBeforeJump = getBatteryLevel();
-			
-			//if(VERBOSE) System.out.println("performing jump operation");
 			
 			// check if sufficient energy
 			if(!attemptEnergyDepletion(energyUsedForJump)) return;
@@ -758,7 +652,7 @@ public class BasicRobot implements Robot {
 				// robot is finished, push changes to Controller
 				control.keyDown(UserInput.Jump, 0);
 				
-				checkOrientation();//assert Arrays.equals(control.getCurrentPosition(), currentPosition);
+				checkOrientation();
 				
 				assert getBatteryLevel()==energyBeforeJump-(energyUsedForJump+3*energyUsedForDistanceSensing):
 					"energy difference before/after rotation: "+
@@ -766,10 +660,8 @@ public class BasicRobot implements Robot {
 					", exepcted: "+(energyUsedForJump+3*energyUsedForDistanceSensing);
 			}
 			catch (Exception e) {
-				//System.out.println("BasicRobot.jump: exception thrown:\n");
-				//e.printStackTrace();
-				endGame(badJumpMessage);
-				throw new Exception(badJumpMessage);
+				endGame(Constants.robotFailureMessage__BadJump);
+				throw new Exception(Constants.robotFailureMessage__BadJump);
 			}
 		}
 	}
@@ -794,16 +686,14 @@ public class BasicRobot implements Robot {
 		List<Direction> exclude = Arrays.asList(exclusions);
 		for(Direction d: MazeMath.ForwardRightBackwardLeft) {
 			if(exclude.contains(d)) {
-				//System.out.println("calculateDistances: skipping "+d);
 				continue;
 			}
+			
+			// if distance calculation fails, -1 is the default nonce value
 			try {
 				calculateObstacleDistance(d);
 			} catch (Exception e) {
 				setDistance(d,-1);
-				// System.out.println("cannot calculate distance in direction "+d);
-				// e.printStackTrace();
-				// System.out.println(e.getMessage()+"-->\n   "+e.getCause().getMessage());
 			}
 		}
 	}
@@ -830,7 +720,7 @@ public class BasicRobot implements Robot {
 		 * if looking through the exit,
 		 * we can't shift the infinity value
 		*/
-		if(Integer.MAX_VALUE!=dForward) setDistance(Direction.FORWARD, dForward-1);//obstacleDistancesForwardRightBackwardLeft.set(0,dForward-1);
+		if(Integer.MAX_VALUE!=dForward) setDistance(Direction.FORWARD, dForward-1);
 		if(Integer.MAX_VALUE!=dBackward) setDistance(Direction.BACKWARD, dBackward+1);obstacleDistancesForwardRightBackwardLeft.set(2,dBackward+1);
 		
 		/*
@@ -859,10 +749,9 @@ public class BasicRobot implements Robot {
 		if(newEnergy<0) {
 			setStopped();
 			setBatteryLevel(0);
-			endGame(noEnergyMessage);
+			endGame(Constants.robotFailureMessage__NoEnergy);
 			return;
 		}
-		//System.out.printf("setting battery: change=%d\n",(int)amount);
 		setBatteryLevel(newEnergy);
 	}
 	
@@ -897,21 +786,20 @@ public class BasicRobot implements Robot {
 	 * or if no sensor is present
 	 */
 	private int getObstacleDistance(Direction d) throws Exception {
-		//if(canSeeThroughTheExitIntoEternity(d)) return Integer.MAX_VALUE;
 		
 		
+		CardinalDirection cd = MazeMath.convertDirs(d, currentDirection);//translateCurrentDirectionToCardinalDirection(d);
 		
-		CardinalDirection cd = translateCurrentDirectionToCardinalDirection(d);
 		int[] dir = cd.getDirection();
-		int dx = dir[0], dy = dir[1];
+		int dx = dir[0], dy = dir[1]; // direction of movement
 		int[] pos = getCurrentPosition();
-		int x = pos[0], y = pos[1];
+		int x = pos[0], y = pos[1]; // current position
 		
-		// if the robot is next to a wall in the given direction,
-		// this loop does not iterate and (x,y) do not change
+		// the number of iterations of this loop is equal to the number of
+		// moves the robot must make before standing next to a wall
 		while(floorplan.hasNoWall(x, y, cd)) {
-			x+=dx;
-			y+=dy;
+			x+=dx; // new x position after move
+			y+=dy; // new y position after move
 			
 			// if true, we've reached beyond the maze--we can see through the exit
 			if(!maze.isValidPosition(x, y)) return Integer.MAX_VALUE;
@@ -921,19 +809,6 @@ public class BasicRobot implements Robot {
 		// pos is unchanged, so computing Manhattan distance
 		// between (x,y) and pos gives total distance covered
 		return MazeMath.manhattanDistance(x, y, pos);
-	}
-	
-	/**
-	 * Translate relative direction to absolute direction given knowledge
-	 * of how current direction relates to a forward direction.
-	 * @param d a value of {@link Direction}
-	 * @return {@link CardinalDirection} corresponding to input direction
-	 */
-	private CardinalDirection translateCurrentDirectionToCardinalDirection(Direction d) {
-		// calculate how far right d is from forward
-		// add this to the index of the absolute direction
-		// matching the forward direction
-		return MazeMath.convertDirs(d, getCurrentDirection());
 	}
 	
 	

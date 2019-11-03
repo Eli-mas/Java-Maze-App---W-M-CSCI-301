@@ -38,5 +38,20 @@ public class Constants {
 	// fixing a value matching the escape key
 	final static int ESCAPE = 27;
 	
+	/**
+	 * failure message when the robot tries to jump out of the maze
+	 */
+	public static final String robotFailureMessage__BadJump="robot tried bad jump";
+	
+	/**
+	 * failure message when the robot crashes into a wall
+	 */
+	public static final String robotFailureMessage__BadMove="robot crashed";
+	
+	/**
+	 * failure message when the robot runs out of battery
+	 */
+	public static final String robotFailureMessage__NoEnergy="robot out of energy";
+	
 
 }
