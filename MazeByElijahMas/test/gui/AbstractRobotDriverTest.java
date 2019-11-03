@@ -167,7 +167,13 @@ public abstract class AbstractRobotDriverTest {
 		}
 		System.out.println("])\nmazeplot()\n");
 		
-		assertTrue(false);
+		if(robot.getFailureMessage()!=Constants.robotFailureMessage__NoEnergy) {
+			System.out.println("\n\n\n!  !  !  The cause of failure is: "+robot.getFailureMessage());
+			assertTrue(false);
+		}
+		else{
+			System.out.println("\n\n\n>  >  >  The cause of failure is depletion of battery");
+		}
 	}
 	
 	/**
