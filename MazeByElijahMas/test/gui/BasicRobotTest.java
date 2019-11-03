@@ -83,7 +83,6 @@ public class BasicRobotTest {
 		Controller.suppressWarnings=true;
 		Controller.suppressUpdates=true;
 		
-		BasicRobot.VERBOSE=false;
 		control=MazeTestGenerator.getController(false, false, level);//getController(false, false, level);
 		robot=(BasicRobot)control.getRobot();
 		control.setInitialRobotEnergyLevel(100000);

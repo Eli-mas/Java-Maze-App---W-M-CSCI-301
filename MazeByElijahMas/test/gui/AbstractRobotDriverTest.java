@@ -78,7 +78,6 @@ public abstract class AbstractRobotDriverTest {
 		//keep terminal clear
 		Controller.suppressUpdates=true;
 		Controller.suppressWarnings=true;
-		BasicRobot.VERBOSE=false;
 		
 		//System.out.println("testing maze at level "+level);
 		controller=MazeTestGenerator.getController(perfect, deterministic, level);
