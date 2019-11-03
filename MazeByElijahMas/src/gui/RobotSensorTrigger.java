@@ -61,7 +61,7 @@ public class RobotSensorTrigger implements Runnable{
 	 */
 	@Override
 	public void run() {
-		while(null!=MazeMath.getRobotPosition(robot) && !robot.hasStopped() && (controller.currentState instanceof StatePlaying)) {
+		while(null!=robot.tryGetCurrentPosition() && !robot.hasStopped() && (controller.currentState instanceof StatePlaying)) {
 			boolean sensorState = robot.hasOperationalSensor(direction);
 			if(sensorState) {// if operational, set to fail
 				robot.triggerSensorFailure(direction);

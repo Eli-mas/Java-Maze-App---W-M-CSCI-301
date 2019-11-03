@@ -76,7 +76,7 @@ public class StatePlaying extends DefaultState {
 	
 	boolean started;
 	
-	Robot robot;
+	//Robot robot;
 	private boolean robotEnabled;
 	
 	public StatePlaying() {
@@ -101,8 +101,7 @@ public class StatePlaying extends DefaultState {
 		// keep the reference to the controller to be able to call method to switch the state
 		control = controller;
 		//keep the reference to the robot to relay battery level information
-		robot = control.getRobot();
-		robotEnabled = (null!=robot) ? true : false;
+		robotEnabled = (null!=control.getRobot()) ? true : false;
 		// keep the reference to the panel for drawing
 		this.panel = panel;
 		
@@ -130,7 +129,7 @@ public class StatePlaying extends DefaultState {
 		if (panel != null) {
 			startDrawer();
 			if(controller.getDriver() != null) {
-				controller.setSensorButtonsState(true);
+				controller.getSensorButtons().setVisibleEnabled(true);
 				
 				System.out.println("driving to exit");
 				try {
@@ -303,6 +302,7 @@ public class StatePlaying extends DefaultState {
 		Graphics g = panel.getBufferGraphics() ;
 		FontMetrics fm=g.getFontMetrics();
 		g.setColor(Color.orange);
+		Robot robot = control.getRobot();
 		
 		try {
 			// print battery level, position, direction, distances

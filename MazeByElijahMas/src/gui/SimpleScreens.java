@@ -133,7 +133,7 @@ public class SimpleScreens {
 		int maxDist=controller.getMazeConfiguration().getMazedists().getMaxDistance();
 		
 		if(controller.getRobot().hasStopped())
-			return controller.getRobotFailureMessage();
+			return controller.getRobot().getFailureMessage();
 		else
 			return String.format(
 						"Energy used: %d/%d\npathLength efficiency: %.1f%% (%d/%d)",
@@ -161,7 +161,7 @@ public class SimpleScreens {
 	private void redrawFinishWinning(Graphics gc) {
 		// if no robot is enabled, pass null,
 		// which ensures that no robot message will be drawn
-		Object[] robotInput = (!controller.robotEnabled) ? null :
+		Object[] robotInput = (controller.getRobot()==null) ? null :
 			new Object[]{getFinishingRobotString(),250,Color.orange,
 					new Font("TimesRoman", Font.BOLD, 24)};
 		
@@ -330,7 +330,7 @@ public class SimpleScreens {
 	 * @param gc the graphics that is the off-screen image
 	 */
 	private void redrawFinish(Graphics gc) {
-		if(controller.robotEnabled) {
+		if(controller.getRobot()!=null) {
 			if(controller.getRobot().hasStopped()) redrawFinishLosing(gc);
 			else redrawFinishWinning(gc);
 		}
