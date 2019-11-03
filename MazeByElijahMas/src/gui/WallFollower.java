@@ -154,7 +154,7 @@ public class WallFollower extends AbstractRobotDriver {
 			// now check for the various conditions
 			// that should cause the method to return
 			if(robot.hasStopped())
-				throw new Exception(getRobotFailureMessage());
+				throw new Exception(robot.getFailureMessage());
 			if(robot.isAtExit()) break;
 			if(interrupted) return false;
 		}
@@ -168,12 +168,12 @@ public class WallFollower extends AbstractRobotDriver {
 		CardinalDirection exitDirection = directionOfExit();
 		faceRobot(exitDirection);
 		if(robot.hasStopped())
-			throw new Exception(getRobotFailureMessage());
+			throw new Exception(robot.getFailureMessage());
 		
 		// move through exit if sufficient energy
 		robot.move(1,false);
 		if(robot.hasStopped())
-			throw new Exception(getRobotFailureMessage());
+			throw new Exception(robot.getFailureMessage());
 		
 		// exited successfully
 		return true;

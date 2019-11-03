@@ -192,7 +192,7 @@ public class BasicRobotTest {
 	 * is difficult to achieve the latter way.</p>
 	 */
 	@ParameterizedTest
-	@ValueSource(ints = {0,1,2,3,4,5,6,7})//
+	@ValueSource(ints = {0,1,2,3,4})//,5,6,7
 	public void tests(int level) {
 		int trials=10;
 		System.out.print("\n: > > >      Tests beginning for level "+level+"      < < < :\nrun ");
@@ -285,8 +285,8 @@ public class BasicRobotTest {
 		// if robot ran out of energy, crash should not have occurred
 		// otherwise check for crash
 		assertEquals(
-			control.getRobotFailureMessage(),
-			runOutOfEnergyFirst ? BasicRobot.noEnergyMessage : BasicRobot.badMoveMessage);
+			robot.getFailureMessage(),
+			runOutOfEnergyFirst ? Constants.robotFailureMessage__NoEnergy : Constants.robotFailureMessage__BadMove);
 	}
 	
 	/**
@@ -351,7 +351,7 @@ public class BasicRobotTest {
 			// if we get here, robot must have had energy and made bad jump
 			assertTrue(robot.getBatteryLevel()>=0);
 			assertTrue(robot.hasStopped());
-			assertTrue(control.getRobotFailureMessage()==BasicRobot.badJumpMessage);
+			assertTrue(robot.getFailureMessage()==Constants.robotFailureMessage__BadJump);
 		}
 	}
 	
@@ -857,8 +857,8 @@ public class BasicRobotTest {
 	private void assertEnergyDepleted() {
 		assertTrue(isInStateWinning());
 		assertTrue(robot.hasStopped());
-		assertTrue("robot still has energy: "+robot.getBatteryLevel()+ " : "+control.getRobotFailureMessage(),
-					control.getRobotFailureMessage()==BasicRobot.noEnergyMessage);
+		assertTrue("robot still has energy: "+robot.getBatteryLevel()+ " : "+robot.getFailureMessage(),
+					robot.getFailureMessage()==Constants.robotFailureMessage__NoEnergy);
 	}
 	
 	/**
@@ -1057,8 +1057,7 @@ public class BasicRobotTest {
 	 * @return position if no exception, otherwise null
 	 */
 	private int[] getRobotPosition() {
-		try {return robot.getCurrentPosition();}
-		catch(Exception e) {return null;}
+		return robot.tryGetCurrentPosition();
 	}
 	
 	/**

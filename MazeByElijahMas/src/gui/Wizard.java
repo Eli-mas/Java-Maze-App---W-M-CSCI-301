@@ -70,7 +70,7 @@ public class Wizard extends AbstractRobotDriver {
 			
 			// make sure robot is operational
 			if(robot.hasStopped()) throw new Exception(
-					"Exception in Wizard.basicWalk: "+controller.getRobotFailureMessage());
+					"Exception in Wizard.basicWalk: "+robot.getFailureMessage());
 			
 			//wait an interval for next operation
 			Thread.sleep(walkDelay);

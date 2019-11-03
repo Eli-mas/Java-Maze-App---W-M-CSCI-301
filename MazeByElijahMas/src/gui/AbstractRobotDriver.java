@@ -160,10 +160,6 @@ public abstract class AbstractRobotDriver implements RobotDriver {
 		controller=c;
 	}
 	
-	public String getRobotFailureMessage() {
-		return controller.getRobotFailureMessage();
-	}
-	
 	public Robot getRobot() {
 		return robot;
 	}
@@ -181,7 +177,7 @@ public abstract class AbstractRobotDriver implements RobotDriver {
 	 * @return position if no exception, otherwise null
 	 */
 	int[] getRobotPosition() {
-		return MazeMath.getRobotPosition(robot);
+		return robot.tryGetCurrentPosition();
 	}
 	
 	public CardinalDirection getCurrentDirection() {

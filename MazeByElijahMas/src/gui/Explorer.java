@@ -227,7 +227,7 @@ public class Explorer extends AbstractRobotDriver {
 		int[] position;
 		int variable, invariant;
 		for(int i=0; i<distToWall; i++) {
-			assert !robot.hasStopped() : controller.getRobotFailureMessage();
+			assert !robot.hasStopped() : robot.getFailureMessage();
 			
 			if(!robot.isInsideRoom()) {
 				System.out.println("robot out of room: "+Arrays.toString(currentPosition));
@@ -389,21 +389,21 @@ public class Explorer extends AbstractRobotDriver {
 	
 	private void faceRobotE(CardinalDirection cd) throws Exception {
 		faceRobot(cd);
-		if(robot.hasStopped()) throw new Exception(controller.getRobotFailureMessage());
+		if(robot.hasStopped()) throw new Exception(robot.getFailureMessage());
 	}
 	
 	private void moveRobotE(CardinalDirection cd,int distance) throws Exception {
 		faceRobotE(cd);
 		for(int i=0; i<distance; i++) moveRobotE(1);
 		currentPosition = getRobotPosition();
-		if(robot.hasStopped()) throw new Exception(controller.getRobotFailureMessage());
+		if(robot.hasStopped()) throw new Exception(robot.getFailureMessage());
 	}
 	
 	private void moveRobotE(int distance) throws Exception {
 		robot.move(distance, false);
 		currentPosition = getRobotPosition();
 		locations.add(currentPosition);
-		if(robot.hasStopped()) throw new Exception(controller.getRobotFailureMessage());
+		if(robot.hasStopped()) throw new Exception(robot.getFailureMessage());
 	}
 	
 	public void walkOutOfMaze_byMinimalVisits() throws Exception {
