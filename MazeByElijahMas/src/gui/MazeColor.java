@@ -1,13 +1,15 @@
 package gui;
 
 import java.awt.Color;
-import java.lang.reflect.Field;
-import java.lang.Class;
 
 public class MazeColor {
-	//internal color representation
-	
-	public static enum Colors {white, red, orange, yellow, grey, gray, darkGray, black, green, blue, violet, purple, cyan, brown};
+	/**
+	 * Named colors that correspond to color names in awt.Color.
+	 * MazeColor uses reflection to get corresponding awt Color objects.
+	 * @author Elijah Mas
+	 *
+	 */
+	public static enum Colors {white, red, orange, yellow, grey, gray, darkGray, black, green, blue, cyan};
 	
 	/**
 	 * the red, green, blue, alpha color components.

@@ -8,9 +8,7 @@ import generation.BSPLeaf;
 import generation.BSPNode;
 import generation.Floorplan;
 import generation.Wall;
-//import java.awt.Color;
-//import java.awt.Graphics;
-//import java.awt.Graphics2D;
+
 import java.util.ArrayList;
 
 import gui.MazeColor.Colors;

@@ -1,6 +1,5 @@
 package generation;
 
-//import java.awt.Color;
 import java.util.ArrayList;
 
 import org.w3c.dom.Document;

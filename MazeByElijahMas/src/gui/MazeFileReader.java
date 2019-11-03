@@ -12,7 +12,6 @@ import generation.Maze;
 import generation.MazeContainer;
 import generation.Wall;
 
-//import java.awt.Color;
 import java.io.File;
 import java.util.ArrayList;
 
@@ -30,8 +29,6 @@ import org.w3c.dom.NodeList;
  * The class is a simple wrapper to make all fields of a Maze object accessible 
  * such that with the help of this class it is straightforward
  * to instantiate a MazeConfiguration object.
- * 
- *
  */
 public class MazeFileReader {
 

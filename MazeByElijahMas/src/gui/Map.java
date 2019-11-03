@@ -8,8 +8,7 @@ import gui.MazeColor.Colors;
 import generation.CardinalDirection;
 import generation.Floorplan;
 import generation.Maze;
-//import java.awt.Color;
-//import java.awt.Graphics;
+
 
 /**
  * This class encapsulates all functionality to draw a map of the overall maze,
