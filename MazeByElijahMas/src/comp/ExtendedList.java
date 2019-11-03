@@ -22,10 +22,17 @@ public class ExtendedList<T> extends ArrayList<T>{
 		super();
 	}
 	
-	public ExtendedList(int length) {
-		super(length);
+	/**
+	 * @see constructor at ArrayList#ArrayList(int)
+	 * @param initialCapacity initial capacity of list
+	 */
+	public ExtendedList(int initialCapacity) {
+		super(initialCapacity);
 	}
-	
+	/**
+	 * @see constructor at {@link ArrayList#ArrayList(java.util.Collection)}
+	 * @param l collection with which to instantiate list
+	 */
 	public ExtendedList(List<T> l) {
 		super(l);
 	}

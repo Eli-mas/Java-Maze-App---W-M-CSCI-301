@@ -157,6 +157,13 @@ public class MazeMath {
 		}
 	}
 	
+	/**
+	 * Convert an integer index to a {@link Turn}.
+	 * Rule is rotate rightwards starting at forwards:
+	 * 0=null, 1=RIGHT, 2=AROUND, 3=LEFT.
+	 * @param index integer
+	 * @return corresponding {@link Turn}
+	 */
 	public static Turn toTurn(int index) {
 		switch(Math.floorMod(index, 4)){
 			case 1: return Turn.RIGHT;
@@ -166,18 +173,26 @@ public class MazeMath {
 		}
 	}
 	
+	/**
+	 * Get the {@link Turn} that corresponds to turning from one
+	 * {@link Direction} to another.
+	 * @param from {@link Direction} initially facing
+	 * @param to {@link Direction} facing after turn
+	 * @return {@link Turn} that accomplishes the given change in direction
+	 */
 	public static Turn toTurn(Direction from, Direction to) {
 		return toTurn(ForwardRightBackwardLeft.getDistanceFromTo(from, to));
 	}
 	
 	/**
-	 * Convert a {@link CardinalDirection} value to a {@link Turn} value.
+	 * Convert a {@link CardinalDirection} value to a {@link Turn} value
+	 * relative to another cardinal direction.
 	 * @param cd a {@link CardinalDirection} value
 	 * @param currentDirection the current absolute direction of reference
-	 * @return the turn that will put us facing the specified direction
+	 * @return the {@link Turn} that will put us facing {@code cd}
 	 */
 	public static Turn toTurn(CardinalDirection cd, CardinalDirection currentDirection) {
-		return toTurn(WestSouthEastNorth.getDistanceFromTo(currentDirection, cd));//toTurn(convertDirs(cd, currentDirection));
+		return toTurn(WestSouthEastNorth.getDistanceFromTo(currentDirection, cd));
 	}
 	
 	/**
@@ -229,8 +244,10 @@ public class MazeMath {
 	 */
 	public static boolean[] booleanMask(int[] a) {
 		boolean[] b = new boolean[a.length];
+		
 		for(int i=0; i<a.length; i++)
-			b[i]=(0!=a[i]);
+			b[i]  =  (0 != a[i]);
+		
 		return b;
 	}
 	
@@ -331,11 +348,9 @@ public class MazeMath {
 		Floorplan floorplan = maze.getFloorplan();
 		
 		for(CardinalDirection cd: CardinalDirection.values()) {
-			// get cells not separated from current cell by wall
-			// this condition would be sufficient on its own to prevent
-			// acceptance of positions outside maze (due to border walls),
-			// save that the exit cell would register as having a valid neighbor
-			// outside the maze, so we have to check for this cell as well
+			// two conditions for neighbor:
+			//     1. new cell not separated from current cell by wall
+			//     2. new cell inside maze
 			if(floorplan.hasNoWall(cell[0], cell[1], cd) && maze.isValidPosition(cell))
 				neighbors.add(getNeighbor(cell,cd));
 		}
@@ -452,23 +467,6 @@ public class MazeMath {
 		}
 		
 		return result;
-	}
-	
-	public static Integer tryGetDistance(Robot robot, Direction direction) {
-		try{
-			return robot.distanceToObstacle(direction);
-		} catch (UnsupportedOperationException e) {
-			return -1;
-		}
-	}
-	
-	public static int[] getRobotPosition(Robot robot) {
-		try {
-			return robot.getCurrentPosition();
-		}
-		catch (Exception e) {
-			return null;
-		}
 	}
 
 }
