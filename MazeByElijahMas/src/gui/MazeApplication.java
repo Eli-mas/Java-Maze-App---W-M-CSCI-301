@@ -8,8 +8,8 @@ import gui.Robot.Direction;
 
 import java.awt.BorderLayout;
 import java.awt.Color;
-import java.awt.Component;
-import java.awt.Dimension;
+//import java.awt.Component;
+//import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -17,12 +17,12 @@ import java.awt.event.KeyListener;
 import java.awt.GridBagLayout;
 import java.awt.GridLayout;
 import java.io.File;
-import java.util.EventObject;
-import java.util.List;
-import java.util.stream.Collectors;
+//import java.util.EventObject;
+//import java.util.List;
+//import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-import javax.swing.BoxLayout;
+//import javax.swing.BoxLayout;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
 import javax.swing.JFrame;
@@ -38,6 +38,9 @@ import javax.swing.JPanel;
  * Refactored by Peter Kemper
  * 
  * TODO: use logger for output instead of Sys.out
+ * 
+ * @author Peter Kemper
+ * @author Elijah Mas (inner classes)
  */
 public class MazeApplication extends JFrame {
 
@@ -273,224 +276,245 @@ public class MazeApplication extends JFrame {
 		app.repaint() ;
 	}
 
-}
-
-
-/**
- * Extends functionality of {@link JPanel}.
- * @author Elijah Mas
- *
- */
-class MPanel extends JPanel{
-	/**
-	 * 
-	 */
-	private static final long serialVersionUID = 1L;
-
-	/**
-	 * Set the visibility/activity state of the panel,
-	 * repaint it, and revalidate its parent.
-	 * @param aFlag boolean telling whether panel should be visible/active
-	 */
-	public void setVisibleEnabled(boolean aFlag) {
-		setVisible(aFlag);
-		setEnabled(aFlag);
-		repaint();
-		getParent().revalidate();
-	}
-}
-
-/**
- * 
- * @author Elijah Mas
- * 
- * SensorButtonPanel holds buttons to trigger cyclical
- * failure and repair of a robot's sensor
- * when operated by a driver.
- *
- */
-class SensorButtonPanel extends MPanel {
 	
+	//////////////////////////////
+	//		INNER CLASSES		//
+	//////////////////////////////
 	
 	/**
-	 * 
+	 * Extends functionality of {@link JPanel}.
+	 *
+	 * @author Elijah Mas
 	 */
-	private static final long serialVersionUID = 1L;
-	private Controller controller;
-
-	public SensorButtonPanel() {
-		//not active to start; activated in playing state
-		setVisible(false);
-		setEnabled(false);
-		setFocusable(false);
+	public class MPanel extends JPanel{
+		/**
+		 * 
+		 */
+		private static final long serialVersionUID = 1L;
 		
-		ActionListener a = new ActionListener() {
-			// use anonymous class to allow the button press
-			// to signal the controller to trigger the failure/repair cycle
+		/**
+		 * Set the visibility/activity state of the panel,
+		 * repaint it, and revalidate its parent.
+		 * @param aFlag boolean telling whether panel should be visible/active
+		 */
+		public void setVisibleEnabled(boolean aFlag) {
+			setVisible(aFlag);
+			setEnabled(aFlag);
+			repaint();
+			getParent().revalidate();
+		}
+	}
+
+	
+	/**
+	 * 
+	 * SensorButtonPanel holds buttons to trigger cyclical
+	 * failure and repair of a robot's sensor
+	 * when operated by a driver.
+	 *
+	 * @author Elijah Mas
+	 * 
+	 */
+	private class SensorButtonPanel extends MPanel {
+		
+		
+		/**
+		 * 
+		 */
+		private static final long serialVersionUID = 1L;
+		
+		/**
+		 * Reference to the {@link Controller}
+		 */
+		private Controller controller;
+		
+		/**
+		 * Initialize: start invisible and disabled, and add directional buttons.
+		 * 
+		 * Each button receives a customized {@link java.awt.event.ActionListener}
+		 * that begins the sensor failure/repair cycle for its associated {@link Direction}.
+		 */
+		public SensorButtonPanel() {
+			//not active to start; activated in playing state
+			setVisible(false);
+			setEnabled(false);
+			setFocusable(false);
 			
-			@Override
-			public void actionPerformed(ActionEvent e) {
-				// verify that the event source was a button press
-				Object source = e.getSource();
-				if(source instanceof dButton) {
-					System.out.println("source: direction="+((dButton)source).getDirection());
-					controller.communicateSensorTrigger(((dButton)source).getDirection());
+			ActionListener a = new ActionListener() {
+				// use anonymous class to allow the button press
+				// to signal the controller to trigger the failure/repair cycle
+				
+				@Override
+				public void actionPerformed(ActionEvent e) {
+					// verify that the event source was a button press
+					Object source = e.getSource();
+					if(source instanceof dButton) {
+						System.out.println("source: direction="+((dButton)source).getDirection());
+						controller.communicateSensorTrigger(((dButton)source).getDirection());
+					}
 				}
+				
+			};
+			
+			for(Direction d: Direction.values()) {
+				dButton button = new dButton(d);
+				// remove focusability to prevent keyboard input
+				// from losing effect in playing state
+				button.setFocusable(false);
+				// add button to SensorButtonPanel instance
+				add(button);
+				// the action listener can extract direction from the button,
+				// so each button gets the same action listener
+				button.addActionListener(a);
 			}
 			
-		};
-		
-		for(Direction d: Direction.values()) {
-			dButton button = new dButton(d);
-			// remove focusability to prevent keyboard input
-			// from losing effect in playing state
-			button.setFocusable(false);
-			// add button to SensorButtonPanel instance
-			add(button);
-			// the action listener can extract direction from the button,
-			// so each button gets the same action listener
-			button.addActionListener(a);
 		}
 		
-	}
-
-	public void setController(Controller controller) {
-		this.controller=controller;
-	}
-	
-	
-}
-
-/**
- * Extension of JButton that provides a direction field
- * that can be accessed externally.
- * @author Elijah Mas
- *
- */
-class dButton extends JButton {
-	/**
-	 * 
-	 */
-	private static final long serialVersionUID = 1L;
-	private Direction direction;
-	
-	
-	public dButton(Direction d) {
-		//button's identifier is the direction name
-		super(d.toString());
-		direction=d;
-	}
-
-	public Direction getDirection() {
-		return direction;
-	}
-}
-
-
-
-
-
-
-/**
- * StartPanel holds four components:
- * (I) a panel with a start button;
- * (II) a panel with an option to select a maze generation algorithm
- * (III) a panel with an option to select maze difficulty level
- * (IV) a panel with an option to select a driver algorithm
- * @author ElijahMas
- *
- */
-class StartPanel extends JPanel implements ActionListener {
-	
-	/**
-	 * 
-	 */
-	private static final long serialVersionUID = 1L;
-
-	/**
-	 * button that starts the maze generation
-	 */
-	JButton startButton;
-	
-	/**
-	 * link to a {@link Controller}
-	 */
-	Controller controller;
-	
-	/**
-	 * box for level selection
-	 */
-	private JComboBox levelOptsBox;
-	
-	
-	/**
-	 * box for maze generation algorithm selection
-	 */
-	private JComboBox mazeOptsBox;
-	
-	
-	/**
-	 * box for driver algorithm selection
-	 */
-	private JComboBox driverOptsBox;
-	
-	
-	/**
-	 * reference to JFrame that holds everything
-	 */
-	private JFrame container;
-	
-	/**
-	 * Set the start button; other panels are received separately.
-	 */
-	public StartPanel() {
-		setLayout(new GridBagLayout()); //centers the button (approximately)
-		startButton = new JButton("Start");
-		startButton.setBackground(Color.green); // this doesn't work on Macs, it seems
-		setBackground(Color.green);
-		startButton.addActionListener(this);
-		add(startButton);
-		setName("Start");
-	}
-	
-	public void setContainer(MazeApplication container) {
-		this.container=container;
-	}
-
-	public void setDriverBox(JComboBox driverOptsBox) {
-		this.driverOptsBox=driverOptsBox;
-	}
-
-	public void setController(Controller controller) {
-		this.controller=controller;
-	}
-	
-	public JButton getButton() {
-		return startButton;
-	}
-	
-	public void setLevelBox(JComboBox levelOptsBox) {
-		this.levelOptsBox=levelOptsBox;
-	}
-	
-	public void setMazeBox(JComboBox mazeOptsBox) {
-		this.mazeOptsBox=mazeOptsBox;
-	}
-
-	/**
-	 * Receive information from other panels
-	 * and signal the controller to start maze generation.
-	 */
-	@Override
-	public void actionPerformed(ActionEvent e) {
-		//System.out.println("startButton: Action performed: "+e);
+		public void setController(Controller controller) {
+			this.controller=controller;
+		}
 		
-		String mazeType = (String)mazeOptsBox.getSelectedItem();
-		switch(mazeType) {
+		
+	}
+	
+	/**
+	 * Extension of JButton that provides a direction field
+	 * that can be accessed externally.
+	 *
+	 * @author Elijah Mas
+	 */
+	private class dButton extends JButton {
+		/**
+		 * 
+		 */
+		private static final long serialVersionUID = 1L;
+		
+		/**
+		 * {@link Direction} to which this button refers
+		 */
+		private Direction direction;
+		
+		
+		/**
+		 * Instantiate this button with a particular {@link Direction}.
+		 * @param d
+		 */
+		public dButton(Direction d) {
+			//button's identifier is the direction name
+			super(d.toString());
+			direction=d;
+		}
+		
+		public Direction getDirection() {
+			return direction;
+		}
+	}
+	
+	
+	
+	
+	
+	
+	/**
+	 * StartPanel holds four components:
+	 * (I) a panel with a start button;
+	 * (II) a panel with an option to select a maze generation algorithm
+	 * (III) a panel with an option to select maze difficulty level
+	 * (IV) a panel with an option to select a driver algorithm
+	 *
+	 * @author ElijahMas
+	 */
+	private class StartPanel extends JPanel implements ActionListener {
+		
+		/**
+		 * 
+		 */
+		private static final long serialVersionUID = 1L;
+		
+		/**
+		 * button that starts the maze generation
+		 */
+		JButton startButton;
+		
+		/**
+		 * link to a {@link Controller}
+		 */
+		Controller controller;
+		
+		/**
+		 * box for level selection
+		 */
+		private JComboBox levelOptsBox;
+		
+		
+		/**
+		 * box for maze generation algorithm selection
+		 */
+		private JComboBox mazeOptsBox;
+		
+		
+		/**
+		 * box for driver algorithm selection
+		 */
+		private JComboBox driverOptsBox;
+		
+		
+		/**
+		 * reference to JFrame that holds everything
+		 */
+		private JFrame container;
+		
+		/**
+		 * Set the start button; other panels are received separately.
+		 */
+		public StartPanel() {
+			setLayout(new GridBagLayout()); //centers the button (approximately)
+			startButton = new JButton("Start");
+			startButton.setBackground(Color.green); // this doesn't work on Macs, it seems
+			setBackground(Color.green);
+			startButton.addActionListener(this);
+			add(startButton);
+			setName("Start");
+		}
+		
+		public void setContainer(MazeApplication container) {
+			this.container=container;
+		}
+		
+		public void setDriverBox(JComboBox driverOptsBox) {
+			this.driverOptsBox=driverOptsBox;
+		}
+		
+		public void setController(Controller controller) {
+			this.controller=controller;
+		}
+		
+		public JButton getButton() {
+			return startButton;
+		}
+		
+		public void setLevelBox(JComboBox levelOptsBox) {
+			this.levelOptsBox=levelOptsBox;
+		}
+		
+		public void setMazeBox(JComboBox mazeOptsBox) {
+			this.mazeOptsBox=mazeOptsBox;
+		}
+		
+		/**
+		 * Receive information from other panels
+		 * and signal the controller to start maze generation.
+		 */
+		@Override
+		public void actionPerformed(ActionEvent e) {
+			//System.out.println("startButton: Action performed: "+e);
+			
+			String mazeType = (String)mazeOptsBox.getSelectedItem();
+			switch(mazeType) {
 			case "Eller":
 				controller.setBuilder(Order.Builder.Eller);
 				break;
-			//case "Kruskal": controller.setBuilder(Order.Builder.Kruskal); break;
+				//case "Kruskal": controller.setBuilder(Order.Builder.Kruskal); break;
 			case "Prim":
 				controller.setBuilder(Order.Builder.Prim);
 				break;
@@ -498,15 +522,16 @@ class StartPanel extends JPanel implements ActionListener {
 				controller.setBuilder(Order.Builder.DFS);
 				break;
 			default: break;
+			}
+			
+			controller.setDriverString((String)driverOptsBox.getSelectedItem());
+			
+			// everything set, generate maze
+			controller.switchFromTitleToGenerating((Integer)levelOptsBox.getSelectedItem());
+			
+			// don't lose keyboard focus from main application
+			container.requestFocusInWindow();
+			
 		}
-		
-		controller.setDriverString((String)driverOptsBox.getSelectedItem());
-		
-		// everything set, generate maze
-		controller.switchFromTitleToGenerating((Integer)levelOptsBox.getSelectedItem());
-		
-		// don't lose keyboard focus from main application
-		container.requestFocusInWindow();
-		
 	}
 }

@@ -3,7 +3,7 @@ package gui;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.Image;
-import java.awt.Panel;
+//import java.awt.Panel;
 import java.awt.RenderingHints;
 
 import javax.swing.JPanel;
@@ -107,37 +107,85 @@ public class MazePanel extends JPanel  {
 		return graphics;
 	}
 	
-	
+	/**
+	 * Fill a rectangle; wrapper around {@link Graphics2D#fillRect(int, int, int, int)}
+	 * 
+	 * @param x x-coordinate
+	 * @param y y-coordinate
+	 * @param width width of rectangle
+	 * @param height height of rectangle
+	 * 
+	 * @see java.awt.Graphics2D#fillRect(int, int, int, int)
+	 */
 	public void fillRect(int x, int y, int width, int height){
-		getBufferGraphics().fillRect(x, y, width, height);
+		graphics.fillRect(x, y, width, height);
 	}
 	
-	/*public void setBackgroundColor(int x, int y, int width, int height, MazeColor c){
-		Graphics gc = getBufferGraphics();
-		gc.setColor(c.export());
-		gc.fillRect(x, y, width, height);
-	}*/
-	
+	/**
+	 * Draw a line; wrapper around {@link Graphics2D#drawLine(int, int, int, int)}
+	 * @param x1 x-coordinate of first point
+	 * @param y1 y-coordinate of first point
+	 * @param x2 x-coordinate of second point
+	 * @param y2 y-coordinate of second point
+	 * 
+	 * @see Graphics2D#drawLine(int, int, int, int)
+	 */
 	public void drawLine(int x1, int y1, int x2, int y2){
-		getBufferGraphics().drawLine(x1, y1, x2, y2);
+		graphics.drawLine(x1, y1, x2, y2);
 	}
 	
+	/**
+	 * Fill a polygon with the current color of the {@link #graphics} object;
+	 * wrapper around {@link Graphics2D#fillPolygon(int[], int[], int).
+	 * 
+	 * @param xpoints array of x values
+	 * @param ypoints array of y values
+	 * @param npoints number of points to take from array
+	 * 
+	 * @see Graphics2D#fillPolygon(int[], int[], int)
+	 */
 	public void fillPolygon(int[] xpoints, int[] ypoints, int npoints){
-		getBufferGraphics().fillPolygon(xpoints, ypoints, npoints);
+		graphics.fillPolygon(xpoints, ypoints, npoints);
 	}
 	
+	/**
+	 * Set the color of the {@link #graphics} object.
+	 * 
+	 * @param c {@link MazeColor} object
+	 */
 	public void setColor(MazeColor c){
-		getBufferGraphics().setColor(c.export());
+		graphics.setColor(c.export());
 	}
 	
+	
+	/**
+	 * Set the color of the {@link #graphics} object.
+	 * 
+	 * @param c {@link MazeColor.Colors} object
+	 */
 	public void setColor(MazeColor.Colors c){
-		getBufferGraphics().setColor(MazeColor.export(c));
+		graphics.setColor(MazeColor.export(c));
 	}
 	
+	/**
+	 * Fill an oval; wrapper around {@link Graphics2D#fillOval(int, int, int, int)}
+	 * 
+	 * @param x x-coordinate
+	 * @param y y-coordinate
+	 * @param width width of rectangle
+	 * @param height height of rectangle
+	 * 
+	 * @see java.awt.Graphics2D#fillOval(int, int, int, int)
+	 */
 	public void fillOval(int x, int y, int width, int height){
-		getBufferGraphics().fillOval(x, y, width, height);
+		graphics.fillOval(x, y, width, height);
 	}
 	
+	/**
+	 * Boolean to test whether graphics is turned off.
+	 * 
+	 * @return true if graphics off, false if on
+	 */
 	public boolean isInNoGraphicsMode() {
 		return null==getBufferGraphics();
 	}

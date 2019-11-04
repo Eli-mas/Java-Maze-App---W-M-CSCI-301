@@ -16,6 +16,8 @@ import generation.Maze;
 import generation.Order;
 import generation.Order.Builder;
 
+import gui.MazeApplication.MPanel;
+
 
 /**
  * <p>Class handles the user interaction:
@@ -27,8 +29,8 @@ import generation.Order.Builder;
  *   </ul>
  *
  * <p> The class is part of a state pattern. It has a state object to implement
- * state-dependent behavior. <ol>
- * The automaton currently has 4 states:
+ * state-dependent behavior.
+ * The automaton currently has 4 states: <ol>
  * <li> StateTitle: the starting state where the user can pick the skill-level</li>
  * <li> StateGenerating: the state in which the factory computes the maze to play
  *      and the screen shows a progress bar.</li>
@@ -186,8 +188,8 @@ public class Controller {
 	
 	/**
 	 * Sets the robot and robot driver
-	 * @param robot
-	 * @param robotdriver
+	 * @param robot a {@link Robot}
+	 * @param robotdriver a {@link RobotDriver}
 	 */
 	public void setRobotAndDriver(Robot robot, RobotDriver robotdriver) {
 		this.robot = robot;
@@ -215,7 +217,7 @@ public class Controller {
 	private MPanel sensorButtons;
 	/**
 	 * set {@link #sensorButtons} field
-	 * @param sensorButtons
+	 * @param sensorButtons {@link MPanel} that holds the start button
 	 */
 	public void setSensorButtons(MPanel sensorButtons) {
 		this.sensorButtons=sensorButtons;
@@ -394,7 +396,7 @@ public class Controller {
 	/**
 	 * Set the initial robot energy level.
 	 * Call this only before the robot starts operations.
-	 * @param amount
+	 * @param amount energy level
 	 */
 	public void setInitialRobotEnergyLevel(float amount) {
 		initialRobotEnergyLevel=amount;
@@ -439,6 +441,9 @@ public class Controller {
 	 * commands that involve operating the robot
 	 * are delegated to the robot itself, and the Down key is ignored;
 	 * keys that affect the graphical interface are handled normally</p>
+	 * 
+	 * @param key key input value
+	 * @param value integer, not used in playing state
 	 */
 	public boolean keyDown(UserInput key, int value) {
 		// delegated to state object

@@ -125,9 +125,9 @@ public class SimpleScreens {
 	private String getFinishingRobotString() {
 		int odometer=controller.getRobot().getOdometerReading();
 		if(controller.getDriver()!=null) {
-			System.out.println("Simple screens: verifying odometer: "+controller.getDriver().getPathLength()+" "+odometer);
+			//System.out.println("Simple screens: verifying odometer: "+controller.getDriver().getPathLength()+" "+odometer);
 			assert controller.getDriver().getPathLength() == odometer : controller.getDriver().getPathLength()+" "+odometer;
-			System.out.println("Simple screens: verifying energy: "+controller.getDriver().getEnergyConsumption()+" "+(int)controller.getEnergyConsumedByRobotAtPresent());
+			//System.out.println("Simple screens: verifying energy: "+controller.getDriver().getEnergyConsumption()+" "+(int)controller.getEnergyConsumedByRobotAtPresent());
 			assert controller.getDriver().getEnergyConsumption() == (int)controller.getEnergyConsumedByRobotAtPresent();
 		}
 		int maxDist=controller.getMazeConfiguration().getMazedists().getMaxDistance();

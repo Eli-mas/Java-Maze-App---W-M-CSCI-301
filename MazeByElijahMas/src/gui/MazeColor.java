@@ -2,9 +2,17 @@ package gui;
 
 import java.awt.Color;
 
+/**
+ * MazeColor helps MazePanel to convert between its
+ * own color representation and {@link java.awt.Color}.
+ * For forthcoming projects, this can be easily
+ * refactored to work with Android color representations.
+ *
+ * @author Elijah Mas
+ */
 public class MazeColor {
 	/**
-	 * Named colors that correspond to color names in awt.Color.
+	 * Named colors that correspond to color names in {@link java.awt.Color}.
 	 * MazeColor uses reflection to get corresponding awt Color objects.
 	 * @author Elijah Mas
 	 *
@@ -19,13 +27,14 @@ public class MazeColor {
 	/**
 	 * Contains information about r,g,b,a components
 	 * which can be extracted via bitwise functions.
-	 * Replicates AWT.Color methods for encoding information.
+	 * Replicates {@link java.awt.Color} methods for encoding information.
 	 */
 	int value;
 	
 	/**
-	 * Replicates AWT color model. Uses bitwise functions
-	 * to store r,g,b,a values in the {@link #value} parameter.
+	 * Uses bitwise functions to store r,g,b,a values in the
+	 * {@link #value} parameter. Reuses code from {@link java.awt.Color}.
+	 * @see Color#Color(int r, int g, int b, int a)
 	 */
 	private void setRGBA() {
         value = ((a & 0xFF) << 24) |
@@ -36,9 +45,9 @@ public class MazeColor {
 	
 	/**
 	 * Set r,g,b values with {@link #a} defaulted to 255.
-	 * @param r red value, 0<=r<=255
-	 * @param g green value, 0<=g<=255
-	 * @param b blue value, 0<=b<=255
+	 * @param r red value, 0 &le; r &le; 255
+	 * @param g green value, 0 &le; g &le; 255
+	 * @param b blue value, 0 &le; b &le; 255
 	 */
 	public MazeColor(int r, int g, int b){
 		this.r=r;
@@ -50,10 +59,10 @@ public class MazeColor {
 	
 	/**
 	 * Set r,g,b values with {@link #a} defaulted to 255.
-	 * @param r red value, 0<=r<=255
-	 * @param g green value, 0<=g<=255
-	 * @param b blue value, 0<=b<=255
-	 * @param a alpha value, 0<=r<=255
+	 * @param r red value, 0 &le; r &le; 255
+	 * @param g green value, 0 &le; g &le; 255
+	 * @param b blue value, 0 &le; b &le; 255
+	 * @param a alpha value, 0 &le; r &le; 255
 	 */
 	public MazeColor(int r, int g, int b, int a){
 		this.r=r;
@@ -65,9 +74,10 @@ public class MazeColor {
 	
 	/**
 	 * Decode the input integer value
-	 * via bitwise functions to yield unique r,g,b,a values,
-	 * as in AWT.Color.
-	 * @param value
+	 * via bitwise functions to yield unique r,g,b,a values;
+	 * reuses code from {@link java.awt.Color}.
+	 * @param value {@code int} representation of color
+	 * @see Color#getRGB()
 	 */
 	public MazeColor(int value) {
 		this.r = (value >> 16) & 0xFF;
@@ -78,21 +88,21 @@ public class MazeColor {
 	}
 	
 	/**
-	 * Translate the current MazeColor object into an awt.Color object.
-	 * @return awt.Color object
+	 * Translate the current MazeColor object into an jav.awt.Color object.
+	 * @return {@link java.awt.Color} object
 	 */
 	public Color export(){
 		return MazeColor.export(r, g, b, a);
 	}
 	
 	/**
-	 * Return awt.Color object instantiated from input values
+	 * Return {@link java.awt.Color} object instantiated from input values
 	 * 
-	 * @param r red value, 0<=r<=255
-	 * @param g green value, 0<=g<=255
-	 * @param b blue value, 0<=b<=255
-	 * @param a alpha value, 0<=r<=255
-	 * @return awt.Color object from input values
+	 * @param r red value, 0 &le; r &le; 255
+	 * @param g green value, 0 &le; g &le; 255
+	 * @param b blue value, 0 &le; b &le; 255
+	 * @param a alpha value, 0 &le; r &le; 255
+	 * @return {@link java.awt.Color} object from input values
 	 */
 	public static Color export(int r, int g, int b, int a){
 		//convert to AWT color
@@ -100,12 +110,12 @@ public class MazeColor {
 	}
 	
 	/**
-	 * Return awt.Color object instantiated from input values
+	 * Return {@link java.awt.Color} object instantiated from input values
 	 * 
-	 * @param r red value, 0<=r<=255
-	 * @param g green value, 0<=g<=255
-	 * @param b blue value, 0<=b<=255
-	 * @return awt.Color object from input values
+	 * @param r red value, 0 &le; r &le; 255
+	 * @param g green value, 0 &le; g &le; 255
+	 * @param b blue value, 0 &le; b &le; 255
+	 * @return {@link java.awt.Color} object from input values
 	 */
 	public static Color export(int r, int g, int b){
 		//convert to AWT color
@@ -113,10 +123,10 @@ public class MazeColor {
 	}
 	
 	/**
-	 * Use reflection to return named awt.Color object
+	 * Use reflection to return named {@link java.awt.Color} object
 	 * from a named #{@link MazeColor} object.
 	 * @param c #{@link MazeColor} object
-	 * @return awt.Color analog
+	 * @return {@link java.awt.Color} analog
 	 */
 	public static Color export(MazeColor.Colors c) {
 		try {
@@ -131,7 +141,7 @@ public class MazeColor {
 	 * Return integer value representation of color components.
 	 * @return color integer value
 	 */
-	public int getRGB() {
+	public int toInt() {
 		return value;
 	}
 

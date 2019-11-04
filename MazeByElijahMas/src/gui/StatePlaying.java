@@ -131,7 +131,7 @@ public class StatePlaying extends DefaultState {
 			if(controller.getDriver() != null) {
 				controller.getSensorButtons().setVisibleEnabled(true);
 				
-				System.out.println("driving to exit");
+				System.out.println(controller.getDriver().getClass().getName()+" driving to exit");
 				try {
 					Thread.sleep(500);
 				} catch (InterruptedException e1) {
@@ -447,7 +447,7 @@ public class StatePlaying extends DefaultState {
 	}
 	/**
 	 * Helper method for walk()
-	 * @param dir
+	 * @param dir {@code int} for direction: 1=forwards, -1=backwards.
 	 * @return true if there is no wall in this direction
 	 */
 	protected boolean checkMove(int dir) {
